@@ -71,9 +71,8 @@ try {
   $deployed = if (Test-Path $deployedFile) { (Get-Content -Raw -LiteralPath $deployedFile).Trim() } else { "" }
 
   if (-not $Force -and $current -eq $target -and $deployed -eq $target) {
-    $running = (& docker inspect -f "{{.State.Running}}" gisul 2>$null)
-    $healthy = (& docker inspect -f "{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}" gisul 2>$null)
-    if ($LASTEXITCODE -eq 0 -and "$running".Trim() -eq "true" -and "$healthy".Trim() -eq "healthy") {
+    $inspection = @(& docker inspect gisul 2>$null | ConvertFrom-Json)[0]
+    if ($LASTEXITCODE -eq 0 -and $inspection.State.Running -and $inspection.State.Health.Status -eq "healthy") {
       Write-DeployLog "status=unchanged commit=$target health=healthy"
       exit 0
     }
@@ -88,8 +87,8 @@ try {
   $env:GISUL_SKILLS_PATH = $SkillsPath
   $env:GISUL_STATE_PATH = $StatePath
 
-  $previousImage = (& docker inspect -f "{{.Image}}" gisul 2>$null)
-  $previousImage = "$previousImage".Trim()
+  $previousInspection = @(& docker inspect gisul 2>$null | ConvertFrom-Json)[0]
+  $previousImage = if ($LASTEXITCODE -eq 0) { "$($previousInspection.Image)" } else { "" }
   $rollbackTag = "gisul-mcp:rollback"
   if ($previousImage -match "^sha256:[0-9a-f]{64}$") {
     & docker image tag $previousImage $rollbackTag
@@ -112,8 +111,9 @@ try {
     throw
   }
 
-  $containerCommit = (& docker inspect -f "{{ index .Config.Labels \"io.gisul.deployed-commit\" }}" gisul).Trim()
-  $health = (& docker inspect -f "{{.State.Health.Status}}" gisul).Trim()
+  $inspection = @(& docker inspect gisul | ConvertFrom-Json)[0]
+  $containerCommit = "$($inspection.Config.Labels.'io.gisul.deployed-commit')"
+  $health = "$($inspection.State.Health.Status)"
   if ($LASTEXITCODE -ne 0 -or $containerCommit -ne $target -or $health -ne "healthy") {
     throw "Deployed container verification failed: commit=$containerCommit health=$health"
   }

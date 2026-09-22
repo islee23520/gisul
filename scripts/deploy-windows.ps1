@@ -58,11 +58,11 @@ try {
   $origin = (& git -C $DeployRoot remote get-url origin).Trim()
   if ($LASTEXITCODE -ne 0) { throw "Cannot read Git origin" }
   if ($origin -ne $Repository) {
-    Invoke-Git remote set-url origin $Repository
+    Invoke-Git -Arguments @("remote", "set-url", "origin", $Repository)
     Write-DeployLog "status=origin-updated origin=$Repository"
   }
 
-  Invoke-Git fetch --prune origin $Branch
+  Invoke-Git -Arguments @("fetch", "--prune", "origin", $Branch)
   $target = (& git -C $DeployRoot rev-parse "origin/$Branch").Trim()
   if ($LASTEXITCODE -ne 0 -or $target -notmatch "^[0-9a-f]{40}$") { throw "Cannot resolve origin/$Branch" }
   $current = if (Test-Path (Join-Path $DeployRoot ".git")) { (& git -C $DeployRoot rev-parse HEAD 2>$null) } else { "" }
@@ -79,9 +79,9 @@ try {
     }
   }
 
-  Invoke-Git checkout -B $Branch "origin/$Branch"
-  Invoke-Git reset --hard "origin/$Branch"
-  Invoke-Git clean -ffd -e .docker/
+  Invoke-Git -Arguments @("checkout", "-B", $Branch, "origin/$Branch")
+  Invoke-Git -Arguments @("reset", "--hard", "origin/$Branch")
+  Invoke-Git -Arguments @("clean", "-ffd", "-e", ".docker/")
 
   New-Item -ItemType Directory -Force -Path $SkillsPath, $StatePath, (Split-Path -Parent $deployedFile) | Out-Null
   $env:GISUL_GIT_COMMIT = $target

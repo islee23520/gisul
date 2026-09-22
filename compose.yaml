@@ -1,0 +1,29 @@
+name: gisul
+
+services:
+  gisul:
+    image: ${GISUL_IMAGE:-gisul-mcp:local}
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        GIT_COMMIT: ${GISUL_GIT_COMMIT:-development}
+    container_name: gisul
+    restart: unless-stopped
+    environment:
+      HOST: 0.0.0.0
+      PORT: "8788"
+      GISUL_ALLOWED_HOSTS: ${GISUL_ALLOWED_HOSTS:-127.0.0.1,localhost}
+      GISUL_SKILL_ROOTS: agents=/skills/agents
+    ports:
+      - "127.0.0.1:8788:8788"
+    volumes:
+      - type: bind
+        source: ${GISUL_SKILLS_PATH:-./.docker/skills}
+        target: /skills/agents
+        read_only: true
+      - type: bind
+        source: ${GISUL_STATE_PATH:-./.docker/state}
+        target: /root/.config/gisul-mcp
+    labels:
+      io.gisul.deployed-commit: ${GISUL_GIT_COMMIT:-development}

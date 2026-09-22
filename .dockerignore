@@ -1,0 +1,11 @@
+.git
+.github
+.omo
+.docker
+docs
+worker
+clients
+scripts
+server/node_modules
+server/dist
+**/*.log

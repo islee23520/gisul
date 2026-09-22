@@ -23,6 +23,21 @@ This project is an experiment around "skills over MCP": instead of copying every
 
 Git is the source of truth. The Worker reads a verified release from R2; the Codex plugin keeps a small loader and reads selected skills and supporting files only when needed. The Node server remains available for local development and existing stdio integrations.
 
+## Windows Docker deployment
+
+The Windows deployment uses this Git repository directly; no source files are
+copied over SSH. On the target host, keep the checkout at `E:\git\gisul` and run:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File E:\git\gisul\scripts\deploy-windows.ps1 -Force
+powershell -NoProfile -ExecutionPolicy Bypass -File E:\git\gisul\scripts\install-windows-autodeploy.ps1
+```
+
+The scheduled task checks `origin/main` every minute. A changed commit is checked
+out, built with Docker Compose, started with `--wait`, and recorded in
+`.docker/deployed-commit`. The existing container stays active while the new image
+is building. Runtime state and skills remain outside Git through bind mounts.
+
 ## Packages
 
 ### Server

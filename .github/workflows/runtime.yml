@@ -3,9 +3,9 @@ name: Runtime validation
 on:
   push:
     branches: [main, feat/dev-tools-mvp]
-    paths: ['server/**', 'worker/**', 'clients/codex/**', '.github/workflows/runtime.yml']
+    paths: ['server/**', 'worker/**', 'clients/codex/**', 'scripts/**', 'Dockerfile', 'compose.yaml', '.dockerignore', '.github/workflows/runtime.yml']
   pull_request:
-    paths: ['server/**', 'worker/**', 'clients/codex/**', '.github/workflows/runtime.yml']
+    paths: ['server/**', 'worker/**', 'clients/codex/**', 'scripts/**', 'Dockerfile', 'compose.yaml', '.dockerignore', '.github/workflows/runtime.yml']
   workflow_dispatch:
 
 permissions:
@@ -33,3 +33,25 @@ jobs:
       - run: npm --prefix worker test
       - run: npx wrangler versions upload --dry-run
         working-directory: worker
+      - name: Validate Windows deployment scripts
+        shell: pwsh
+        run: |
+          $failed = $false
+          foreach ($file in @('scripts/deploy-windows.ps1', 'scripts/install-windows-autodeploy.ps1')) {
+            $tokens = $null
+            $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $file), [ref]$tokens, [ref]$errors) | Out-Null
+            foreach ($error in $errors) {
+              Write-Error "${file}:$($error.Extent.StartLineNumber): $($error.Message)"
+              $failed = $true
+            }
+          }
+          if ($failed) { exit 1 }
+      - name: Validate and build Docker deployment
+        env:
+          GISUL_SKILLS_PATH: /tmp/gisul-skills
+          GISUL_STATE_PATH: /tmp/gisul-state
+          GISUL_GIT_COMMIT: ${{ github.sha }}
+        run: |
+          docker compose config
+          docker compose build gisul

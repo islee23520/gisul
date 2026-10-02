@@ -170,6 +170,87 @@ this does not modify Codex itself or guarantee automatic selection for every tas
   host-wide consent enforcement. Digest verification establishes consistency,
   not trust in the author. An execution approval is never granted by a tool response.
 
+## Caller platform context
+
+The local `server/dist/codex.js` adapter detects **the caller** using its own
+`process.platform`, not the remote server's operating system, origin label, or
+skill paths. This works identically with SSH/stdio and HTTP upstreams. Run the
+adapter on the command host. A remote wrapper or container must explicitly
+configure its caller if the adapter's runtime OS differs from that host.
+
+Set `GISUL_CALLER_PLATFORM` in the adapter's environment to exactly `win32`,
+`darwin`, `linux`, or `unknown`. Other values (including an empty value) fail
+startup instead of silently falling back. Tests and programmatic wrappers may
+also pass this value as the sixth argument of `createCodexBridge`; it takes
+precedence over the environment default. No override means `process.platform`.
+Unrecognized runtime platforms become `unknown` and retain the original value
+in `reported_platform`. Use an explicit `unknown` when a wrapper cannot establish
+the command host. For example, a wrapper invoking this adapter can use:
+
+```powershell
+$env:GISUL_CALLER_PLATFORM = 'win32'
+node server/dist/codex.js --origin my-server -- ssh my-server gisul
+```
+
+`search_skills`, `load_skill`, and every `read_skill_file` result (including
+directory listings and explicit `load_id` reads) include these separate fields:
+
+```json
+{
+  "caller_platform": {
+    "platform": "win32",
+    "reported_platform": "win32",
+    "source": "override"
+  },
+  "platform_guidance": {
+    "os": "windows",
+    "shell_family": "powershell",
+    "path_style": "win32",
+    "path_separator": "\\",
+    "home_reference": "$env:USERPROFILE",
+    "environment_reference_template": "$env:{name}",
+    "executable_lookup_template": "Get-Command {name}"
+  }
+}
+```
+
+`source` is `process.platform` or `override`. Guidance also includes human-readable
+`notes`. Windows uses PowerShell command templates and Windows path syntax;
+macOS/Linux use POSIX templates (`$HOME`, `${name}`, `command -v {name}`), with
+distinct `os` values `macos` and `linux`. These are command-selection guidance,
+not proof that a particular shell, package manager, executable, or home directory
+exists. Unknown uses `os: unknown` and `null` for all command/path fields.
+
+Load and read responses also include `platform_compatibility` with `status`
+(`compatible`, `incompatible`, or `unknown`), `required_platforms` (an array of
+Node platform names or `null`), and `basis`. Authors may explicitly declare
+supported platforms in canonical SKILL.md frontmatter:
+
+```yaml
+metadata:
+  gisul:
+    platforms: [darwin]
+```
+
+The manifest frontmatter must still equal the verified markdown. Declarations
+accept a nonempty array of up to three values from `win32`, `darwin`, and `linux`.
+An explicit declaration has `basis: skill-metadata`. `cua-driver` has an explicit
+known native macOS contract (`required_platforms: [darwin]`,
+`basis: known-cua-driver-contract`) when no declaration is present. Other skills
+without a declaration report `unknown`/`not-declared`, not assumed portability.
+Malformed platform metadata reports `unknown`/`invalid-declaration`; unknown
+callers always report unknown compatibility even for a valid declaration.
+An incompatible skill remains readable for inspection, but its platform-specific
+commands must not be treated as applicable on the caller. Use an explicitly
+supported skill instead. Prose is not scanned to guess OS requirements.
+
+Context is added **outside** canonical `markdown` and supporting `text`. No
+platform variants are selected, content rewritten, or files prefetched. Digests,
+manifests, commit pinning and `load_id` identity remain platform-independent.
+The context is local to the adapter's MCP responses; no server-platform inference,
+upstream platform extension, installed OMO modification, or local skill copying
+is involved. Clients bypassing this adapter do not receive this context.
+
 ## Event evidence
 
 The bridge appends JSONL events to

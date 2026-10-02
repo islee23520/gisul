@@ -84,7 +84,7 @@ test('bridge uses authenticated HTTP, preserves release evidence, and recovers a
   const endpoint = `http://127.0.0.1:${proxy.address().port}/mcp`;
   assert.equal((await fetch(endpoint, { method: 'POST' })).status, 401);
   const client = new Client({ name: 'http-bridge-test', version: '1' }); t.after(() => client.close());
-  const transport = new StdioClientTransport({ command: process.execPath, args: [fileURLToPath(new URL('../dist/codex.js', import.meta.url)), '--origin', 'worker-fixture', '--http-url', endpoint, '--bearer-token-file', tokenFile], env: { ...process.env, GISUL_EVENT_LOG_DIR: join(root, 'events') }, stderr: 'pipe' });
+  const transport = new StdioClientTransport({ command: process.execPath, args: [fileURLToPath(new URL('../dist/codex.js', import.meta.url)), '--origin', 'worker-fixture', '--http-url', endpoint, '--bearer-token-file', tokenFile], env: { ...process.env, GISUL_CALLER_PLATFORM: 'linux', GISUL_EVENT_LOG_DIR: join(root, 'events') }, stderr: 'pipe' });
   transport.stderr.on('data', data => stderr += data);
   try { await client.connect(transport); } catch (error) { throw new Error(`${error}; diagnostic stderr: ${stderr}`); }
   assert.deepEqual((await client.listTools()).tools.map(tool => tool.name).sort(), ['load_skill', 'read_skill_file', 'search_skills']);
@@ -92,7 +92,14 @@ test('bridge uses authenticated HTTP, preserves release evidence, and recovers a
   const found = await call('search_skills', { query: 'HTTP' }); assert.equal(found.totalMatches, 1);
   const requestsAfterSearch = seenRequests; await call('search_skills', { query: 'HTTP' }); assert.equal(seenRequests, requestsAfterSearch, 'second search uses the private connection cache');
   const loaded = await call('load_skill', { uri }); assert.equal(loaded.release, 'http-fixture.1'); assert.equal(loaded.manifest_digest, manifestDigest);
-  assert.equal((await call('read_skill_file', { skill_uri: uri, uri: uri.replace('SKILL.md', 'guide.md') })).text, contents['guide.md']);
+  const supporting = await call('read_skill_file', { skill_uri: uri, uri: uri.replace('SKILL.md', 'guide.md') });
+  assert.equal(supporting.text, contents['guide.md']);
+  assert.deepEqual(loaded.caller_platform, { platform: 'linux', reported_platform: 'linux', source: 'override' });
+  assert.deepEqual(supporting.caller_platform, loaded.caller_platform);
+  assert.equal(loaded.platform_guidance.os, 'linux');
+  assert.equal(supporting.platform_guidance.path_style, 'posix');
+  assert.equal(loaded.digest, `sha256:${createHash('sha256').update(markdown).digest('hex')}`);
+  assert.equal(loaded.markdown, markdown);
   await stopOrigin();
   assert.equal((await client.callTool({ name: 'search_skills', arguments: {} })).isError, true);
   await startOrigin();

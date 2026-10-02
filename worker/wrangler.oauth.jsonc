@@ -1,0 +1,40 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "gisul-mcp",
+  "account_id": "8277c1acc712e4a9d00479255015c200",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-03",
+  "workers_dev": true,
+  "preview_urls": false,
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  },
+  "r2_buckets": [
+    {
+      "binding": "SKILLS_BUCKET",
+      "bucket_name": "gisul-skills-releases"
+    }
+  ],
+  "compatibility_flags": [
+    "global_fetch_strictly_public"
+  ],
+  "vars": {
+    "GISUL_NATIVE_TOOLS": "true",
+    "GISUL_PUBLIC_URL": "https://gisul.iyendev.com",
+    "GISUL_GITHUB_USER_IDS": "65930387",
+    "GITHUB_CLIENT_ID": "Ov23liaj8ZrnSwj4l9K0"
+  },
+  "kv_namespaces": [
+    {
+      "binding": "OAUTH_KV",
+      "id": "bb3ef2930c8e403b9dbb4b0df03601b0"
+    }
+  ],
+  "routes": [
+    {
+      "pattern": "gisul.iyendev.com",
+      "custom_domain": true
+    }
+  ]
+}

@@ -3,9 +3,9 @@ name: Runtime validation
 on:
   push:
     branches: [main, feat/dev-tools-mvp]
-    paths: ['server/**', 'worker/**', 'clients/codex/**', 'scripts/**', 'Dockerfile', 'compose.yaml', '.dockerignore', '.github/workflows/runtime.yml']
+    paths: ['server/**', 'worker/**', 'clients/codex/**', 'clients/openclaw/**', 'scripts/**', 'Dockerfile', 'compose.yaml', '.dockerignore', '.github/workflows/runtime.yml']
   pull_request:
-    paths: ['server/**', 'worker/**', 'clients/codex/**', 'scripts/**', 'Dockerfile', 'compose.yaml', '.dockerignore', '.github/workflows/runtime.yml']
+    paths: ['server/**', 'worker/**', 'clients/codex/**', 'clients/openclaw/**', 'scripts/**', 'Dockerfile', 'compose.yaml', '.dockerignore', '.github/workflows/runtime.yml']
   workflow_dispatch:
 
 permissions:
@@ -28,6 +28,7 @@ jobs:
       - run: npm --prefix worker ci
       - run: npm --prefix server run build
       - run: npm --prefix server test
+      - run: node server/bench/search.mjs --check
       - run: npm --prefix server run build:codex-plugin
       - run: npm --prefix worker run typecheck
       - run: npm --prefix worker test
@@ -55,3 +56,5 @@ jobs:
         run: |
           docker compose config
           docker compose build gisul
+      - run: npx wrangler deploy --config wrangler.oauth.jsonc --dry-run
+        working-directory: worker

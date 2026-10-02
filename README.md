@@ -95,6 +95,12 @@ checks. Build the plugin with `cd server && npm run build:codex-plugin` and inst
 it from a Codex marketplace. It bundles the MCP adapter and the small Gisul loader;
 remote skills stay on the server.
 
+## OpenClaw integration
+
+The [OpenClaw bundle](clients/openclaw/README.md) adds a remote skill loader,
+a bootstrap discovery hook and a read-only OAuth MCP connection. Workflow
+skills remain on Gisul; installation and verification instructions are included.
+
 ## Authentication
 
 The Worker validates its MCP bearer before reading R2. Its publication bearer is a separate secret; Cloudflare account authentication is used to manage the Worker and bucket. The Node HTTP server supports:

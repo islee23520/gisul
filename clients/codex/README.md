@@ -142,7 +142,7 @@ this does not modify Codex itself or guarantee automatic selection for every tas
 
 ## Behavior and boundaries
 
-- Search returns compact names, descriptions and exact URIs. Same-named skills remain separate. Search uses all literal query words, reads all upstream catalog pages, and sorts matches by URI before applying `offset` (default 0) and `limit` (default 5, maximum 50).
+- Search returns compact names, descriptions and exact URIs. Same-named skills remain separate. The loader searches a task subject with `mode: discovery`, checks relevance and invocation policy, and loads only selected results. Legacy mode retains all-literal-word matching and URI order; ranked modes are described below. Search reads all upstream catalog pages before applying `offset` (default 0) and `limit` (default 5, maximum 50).
 - Search responses include `totalMatches`, `offset`, and `limit`. When `nextOffset` is present, pass it as `offset` with the same `query` and `limit` to continue; its absence marks the last page. For example, start with `{"query":"review","limit":50}`, then use `{"query":"review","limit":50,"offset":50}` if `nextOffset` is 50. Catalog pages may be reused within the upstream TTL (30 seconds on gisul); additions or removals between refreshes can shift pages; restart from offset 0 if the catalog changes.
 - `offset` must be a nonnegative safe integer and `limit` an integer from 1 to 50; invalid values return an MCP tool error. An offset at or beyond `totalMatches` returns an empty page without `nextOffset`, as does a search with no matches.
 - Load fetches the current manifest and only `SKILL.md`. Every file read checks
@@ -191,7 +191,11 @@ project workspace. Codex session IDs are not invented by the bridge.
 cd server
 npm run build
 npm test
+node bench/search.mjs --check
 ```
+
+The [search benchmark](../../server/bench/README.md) uses a fixed metadata fixture;
+its scores do not describe the current connected catalog or network latency.
 
 To run the adapter directly against an alternative stdio server:
 
@@ -227,18 +231,22 @@ directory RPC or pagination. This does not discover newly added files until relo
 ## Opt-in discovery modes and version selection
 
 `search_skills` keeps its original substring matching and URI order when `mode`
-is omitted or `legacy`. New clients can opt into `automatic` or `explicit`.
-Both normalize case, Unicode width/composition and whitespace, require every
-query term to match, and rank exact names before exact keywords, then other
-name/keyword/description matches. URI order breaks ties; same-named skills from
+is omitted or `legacy`. New clients can opt into `discovery`, `automatic` or `explicit`.
+These modes normalize case, Unicode width/composition, punctuation, common Korean
+particles and English plurals. They rank exact names, exact keywords and weighted
+subject matches, using term rarity and coverage without requiring every narrative
+detail to match. Incidental single-word matches in longer requests are excluded.
+URI order breaks ties; same-named skills from
 different sources remain distinct. Keywords come from the skill's versioned
 frontmatter, so adding bilingual discovery terms is a content change.
-Latin alphanumeric terms match whole words in these modes: `UI` does not match
-inside `build`, and `hate` does not match inside `whatever`. Non-Latin terms and
-compound names retain substring matching after Unicode normalization.
+Tokens match whole words after normalization: `UI` does not match inside `build`,
+and `hate` does not match inside `whatever`. Compound names are also tokenized;
+exact full names retain priority. There is no embedded map of skill names to queries.
 
-`automatic` excludes entries with `disable-model-invocation: true` and requires
-a nonempty subject. `explicit` includes them for a user-requested workflow.
+`discovery` searches all candidates but never activates them. Candidates marked
+`invocation: explicit` still require an explicit user request before application.
+`automatic` excludes entries with `disable-model-invocation: true`.
+Both require a nonempty subject. `explicit` includes all candidates for a user-requested workflow.
 These modes return `invocation` and the SKILL.md `digest` with each match. This
 is a discovery policy, not an authorization boundary. The tool does not schedule
 automatic searches or change global Codex instructions.

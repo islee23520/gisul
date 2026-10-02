@@ -15,7 +15,7 @@ const token = "direct-worker-fixture-token";
 const publishToken = "release-publisher-fixture-token";
 const uri = "skill://gisul/gisul/flow/SKILL.md";
 const root = uri.slice(0, -8);
-const bundle = build({ entryPoints: [fileURLToPath(new URL("../src/index.ts", import.meta.url))], bundle: true, write: false, format: "esm", platform: "browser", target: "es2022" });
+const bundle = build({ entryPoints: [fileURLToPath(new URL("../src/index.ts", import.meta.url))], bundle: true, write: false, format: "esm", platform: "browser", target: "es2022", external: ["cloudflare:workers"] });
 
 async function fixture(t, bearer = token, writes = false, outbound) {
   const modules = { "index.js": { type: "esm", contents: (await bundle).outputFiles[0].text } };
@@ -315,7 +315,7 @@ test("HTTP write discovery and calls require a distinct writer credential", asyn
   assert.equal((await rpc("tools/call", { name: "create_skill", arguments: {} })).status, 403);
   const init = await rpc("initialize", { protocolVersion: "2025-11-25" }, writer);
   assert.ok(init.body.result.capabilities.tools);
-  assert.deepEqual((await rpc("tools/list", {}, writer)).body.result.tools.map(t => t.name), ["create_skill", "update_skill", "get_skill_write_status"]);
+  assert.deepEqual((await rpc("tools/list", {}, writer)).body.result.tools.map(t => t.name), ["create_skill", "update_skill", "get_skill_write_status", "create_pack", "update_pack", "get_pack_write_status"]);
   const invalid = await rpc("tools/call", { name: "create_skill", arguments: { name: "../bad", markdown: "bad" } }, writer);
   assert.equal(invalid.body.result.isError, true);
   assert.match(invalid.body.result.content[0].text, /Invalid skill name/);

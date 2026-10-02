@@ -58,6 +58,42 @@ test("inventory checks stored bytes and complete object membership before activa
   assert.equal(await readCurrent(bucket), null);
 });
 
+test("inventory latency is bounded by concurrent reads without skipping bytes or inspection", async () => {
+  const files = await Promise.all(Array.from({ length: 19 }, async (_, i) => ({ key: releaseKey(commit, `file-${i}.md`), digest: await sha256(`body-${i}`), size: bytes(`body-${i}`).byteLength })));
+  let active = 0, maximum = 0;
+  const read = new Set(), inspected = new Set();
+  const bucket = {
+    list: async () => ({ objects: files.map(({key}) => ({key})), truncated: false }),
+    get: async key => {
+      active++; maximum = Math.max(maximum, active);
+      await new Promise(resolve => setTimeout(resolve, 5));
+      const i = files.findIndex(file => file.key === key);
+      return { size: files[i].size, arrayBuffer: async () => { await new Promise(resolve => setTimeout(resolve, 5)); active--; read.add(key); return bytes(`body-${i}`); } };
+    },
+  };
+  await verifyInventory(bucket, commit, files, [], file => inspected.add(file.key));
+  assert.ok(maximum > 1 && maximum <= 4, `expected bounded parallel IO; observed ${maximum}`);
+  assert.equal(active, 0);
+  assert.deepEqual([...read].sort(), files.map(file => file.key).sort());
+  assert.deepEqual([...inspected].sort(), [...read].sort());
+});
+
+test("a corrupt parallel read rejects only after all in-flight checks settle", async () => {
+  const files = await Promise.all(Array.from({ length: 12 }, async (_, i) => ({ key: releaseKey(commit, `file-${i}`), digest: await sha256("good"), size: 4 })));
+  let active = 0, started = 0;
+  const bucket = {
+    list: async () => ({ objects: files.map(({key}) => ({key})), truncated: false }),
+    get: async key => {
+      active++; started++;
+      const corrupt = key === files[0].key;
+      return { size: 4, arrayBuffer: async () => { await new Promise(resolve => setTimeout(resolve, corrupt ? 5 : 40)); active--; return bytes(corrupt ? "evil" : "good"); } };
+    },
+  };
+  await assert.rejects(verifyInventory(bucket, commit, files), /digest verification/);
+  assert.equal(active, 0, "failure must drain already-started IO");
+  assert.ok(started <= 4, "failure must stop launching additional reads");
+});
+
 test("only one concurrent pointer switch wins, including initial publication", async t => {
   const bucket = await bucketFixture(t);
   const first = await Promise.allSettled([switchCurrent(bucket, identity("a"), null, 1), switchCurrent(bucket, identity("b"), null, 2)]);

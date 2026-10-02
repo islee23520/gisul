@@ -1,0 +1,44 @@
+{
+  "native": {
+    "verified": true,
+    "observed_at": "2026-10-01T08:49:05.544Z",
+    "mode": "installed bundle only through native OpenClaw MCP runtime",
+    "endpoint": "https://gisul.iyendev.com/mcp",
+    "server_source": "3af736e8161152504fd339f496b474eb47ba258c",
+    "client_source": "b5eddedfa03e94dde8791e01934f5d8014ca6564",
+    "tools": [
+      "load_skill",
+      "read_skill_file",
+      "search_skills"
+    ],
+    "release": "20260929.38",
+    "commit": "cb56c1ade59bd999e8ae859bd19d0b030ab8c03c",
+    "skill": {
+      "uri": "skill://gisul/gisul/dont-make-me-think/SKILL.md",
+      "digest": "sha256:a7fc99986500f25bb4acbc7bae138412a895d43d1437fc943fdfb21c56ba5e88",
+      "digest_verified": true
+    },
+    "supporting_file": {
+      "uri": "skill://gisul/gisul/dont-make-me-think/references/sources-and-testing.md",
+      "digest": "sha256:5f897c607ba3eb676cd441d5c4177771d1c75f38ef409e75aa240020d34c30ba",
+      "digest_verified": true
+    },
+    "load_id": "cb56c1ade59bd999e8ae859bd19d0b030ab8c03c.7f89d8d826ec66bf4d9f3fb364e76abd4ea47e4c982ec7981268e7545fff8be6",
+    "legacy_bearer_used": false
+  },
+  "agent": {
+    "status": "ok",
+    "session_id": "gisul-iyen-oauth-20261001",
+    "agent_harness": "codex",
+    "successful_tools": [
+      "bash",
+      "gisul.search_skills",
+      "gisul.load_skill",
+      "gisul.read_skill_file"
+    ],
+    "result_sha256": "f8f8c2568d0e14db8883f27ce5c47c46fed6c36b13fb77b32ebe7ede0aa68da4",
+    "reported_result": "OAuth 전환 읽기 검증 완료했어요.\n\n- origin: `https://gisul.iyendev.com`\n- server_version: `3af736e8161152504fd339f496b474eb47ba258c`\n- release: `20260929.38`\n- commit: `cb56c1ade59bd999e8ae859bd19d0b030ab8c03c`\n- skill_uri: `skill://gisul/gisul/dont-make-me-think/SKILL.md`\n- load_id: `cb56c1ade59bd999e8ae859bd19d0b030ab8c03c.7f89d8d826ec66bf4d9f3fb364e76abd4ea47e4c982ec7981268e7545fff8be6`\n- 읽은 파일 URI: `skill://gisul/gisul/dont-make-me-think/references/sources-and-testing.md`\n\n채널 메시지 전송이나 QA 작업 실행은 하지 않았어요.",
+    "delivery": false,
+    "gisul_skill_visible": true
+  }
+}

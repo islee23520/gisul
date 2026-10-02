@@ -1,0 +1,60 @@
+{
+  "source": "OpenClaw Gateway agent run receipt and existing Gisul adapter event log",
+  "session_id": "gisul-loader-macmini-v2-20261001",
+  "status": "ok",
+  "agent_harness": "codex",
+  "provider": "openai",
+  "model": "gpt-5.6-luna",
+  "tool_summary": {
+    "calls": 4,
+    "tools": [
+      "bash",
+      "gisul.search_skills",
+      "gisul.load_skill",
+      "gisul.read_skill_file"
+    ],
+    "failures": 0
+  },
+  "successful_tools": [
+    "bash",
+    "gisul.search_skills",
+    "gisul.load_skill",
+    "gisul.read_skill_file"
+  ],
+  "agent_result_sha256": "171f2c21cc300dfa9a27d4465ee9fada947e8724994b2c493d6deccd6e75fa1f",
+  "gisul_events": [
+    {
+      "ts": "2026-10-01T07:30:40.235Z",
+      "connection_id": "c_1790839819438_48153",
+      "event": "search",
+      "query": "시안 비교",
+      "mode": "discovery",
+      "release": "20260929.38",
+      "commit": "cb56c1ade59bd999e8ae859bd19d0b030ab8c03c"
+    },
+    {
+      "ts": "2026-10-01T07:30:45.473Z",
+      "connection_id": "c_1790839819438_48153",
+      "event": "load_skill",
+      "uri": "skill://gisul/gisul/dont-make-me-think/SKILL.md",
+      "release": "20260929.38",
+      "commit": "cb56c1ade59bd999e8ae859bd19d0b030ab8c03c",
+      "load_id": "566bcf2eb083f16e0e93dbd04a3b2c3116b02e186a24d9e10e8386129b50d52b"
+    },
+    {
+      "ts": "2026-10-01T07:30:54.386Z",
+      "connection_id": "c_1790839819438_48153",
+      "event": "read_skill_file",
+      "skill_uri": "skill://gisul/gisul/dont-make-me-think/SKILL.md",
+      "uri": "skill://gisul/gisul/dont-make-me-think/references/sources-and-testing.md",
+      "load_id": "566bcf2eb083f16e0e93dbd04a3b2c3116b02e186a24d9e10e8386129b50d52b",
+      "release": "20260929.38",
+      "commit": "cb56c1ade59bd999e8ae859bd19d0b030ab8c03c"
+    }
+  ],
+  "delivery": false,
+  "limits": [
+    "One explicitly requested smoke does not establish discovery compliance on every future task.",
+    "Native verification separately isolates the configured Gisul connection."
+  ]
+}

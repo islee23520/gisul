@@ -1,0 +1,167 @@
+[
+  {
+    "uri": "skill://fixture/demo/form-transitions/SKILL.md",
+    "name": "form-transitions",
+    "description": "Review waiting, expiration and retry states in a signup form.",
+    "keywords": [
+      "이메일 인증",
+      "링크 만료",
+      "상태 전이",
+      "signup form",
+      "email verification"
+    ],
+    "automatic": true,
+    "digest": "synthetic-metadata-only"
+  },
+  {
+    "uri": "skill://fixture/demo/status-brief/SKILL.md",
+    "name": "status-brief",
+    "description": "Summarize delivery progress, blocked work and evidence for a team.",
+    "keywords": [
+      "개발 진행",
+      "팀 공유",
+      "일정 의존성",
+      "progress report",
+      "blocked work"
+    ],
+    "automatic": true,
+    "digest": "synthetic-metadata-only"
+  },
+  {
+    "uri": "skill://fixture/demo/api-contract/SKILL.md",
+    "name": "api-contract",
+    "description": "Check endpoint request fields and response schemas for compatibility.",
+    "keywords": [
+      "API 계약",
+      "요청 필드",
+      "응답 스키마",
+      "endpoint schema",
+      "compatibility"
+    ],
+    "automatic": true,
+    "digest": "synthetic-metadata-only"
+  },
+  {
+    "uri": "skill://fixture/demo/database-query/SKILL.md",
+    "name": "database-query",
+    "description": "Inspect SQL query plans and index selection for slow database access.",
+    "keywords": [
+      "데이터베이스",
+      "느린 쿼리",
+      "실행 계획",
+      "SQL query",
+      "database index"
+    ],
+    "automatic": true,
+    "digest": "synthetic-metadata-only"
+  },
+  {
+    "uri": "skill://fixture/demo/accessibility-check/SKILL.md",
+    "name": "accessibility-check",
+    "description": "Review keyboard navigation, focus order and screen reader labels.",
+    "keywords": [
+      "접근성",
+      "키보드 탐색",
+      "초점 순서",
+      "screen reader",
+      "keyboard navigation"
+    ],
+    "automatic": true,
+    "digest": "synthetic-metadata-only"
+  },
+  {
+    "uri": "skill://fixture/demo/translation-check/SKILL.md",
+    "name": "translation-check",
+    "description": "Review translation terminology and locale consistency.",
+    "keywords": [
+      "번역 용어",
+      "언어 일관성",
+      "translation terminology",
+      "locale consistency"
+    ],
+    "automatic": true,
+    "digest": "synthetic-metadata-only"
+  },
+  {
+    "uri": "skill://fixture/demo/dependency-check/SKILL.md",
+    "name": "dependency-check",
+    "description": "Inspect dependency upgrades and breaking package changes.",
+    "keywords": [
+      "의존성 업그레이드",
+      "패키지 변경",
+      "dependency upgrade",
+      "breaking changes"
+    ],
+    "automatic": true,
+    "digest": "synthetic-metadata-only"
+  },
+  {
+    "uri": "skill://fixture/demo/unit-design/SKILL.md",
+    "name": "unit-design",
+    "description": "Design unit tests around input boundaries and failure cases.",
+    "keywords": [
+      "단위 테스트",
+      "입력 경계",
+      "실패 사례",
+      "unit tests",
+      "boundary cases"
+    ],
+    "automatic": true,
+    "digest": "synthetic-metadata-only"
+  },
+  {
+    "uri": "skill://fixture/demo/log-inspection/SKILL.md",
+    "name": "log-inspection",
+    "description": "Read service logs to locate failed requests and error patterns.",
+    "keywords": [
+      "서비스 로그",
+      "오류 패턴",
+      "요청 실패",
+      "service logs",
+      "error patterns"
+    ],
+    "automatic": true,
+    "digest": "synthetic-metadata-only"
+  },
+  {
+    "uri": "skill://fixture/demo/diagram-sketch/SKILL.md",
+    "name": "diagram-sketch",
+    "description": "Draw system diagrams showing components and data movement.",
+    "keywords": [
+      "시스템 도식",
+      "데이터 흐름",
+      "구성 요소",
+      "system diagram",
+      "data flow"
+    ],
+    "automatic": true,
+    "digest": "synthetic-metadata-only"
+  },
+  {
+    "uri": "skill://fixture/demo/release-plan/SKILL.md",
+    "name": "release-plan",
+    "description": "Plan a release with rollback gates and deployment evidence.",
+    "keywords": [
+      "출시 계획",
+      "롤백 조건",
+      "배포 증거",
+      "release plan",
+      "rollback gates"
+    ],
+    "automatic": false,
+    "digest": "synthetic-metadata-only"
+  },
+  {
+    "uri": "skill://fixture/demo/evaluation-audit/SKILL.md",
+    "name": "evaluation-audit",
+    "description": "Audit evaluation leakage and independence of reference answers.",
+    "keywords": [
+      "평가 누출",
+      "정답 독립성",
+      "evaluation leakage",
+      "reference answers"
+    ],
+    "automatic": false,
+    "digest": "synthetic-metadata-only"
+  }
+]

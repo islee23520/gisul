@@ -75,11 +75,22 @@ export async function verifyInventory(bucket: R2Bucket, commit: string, inventor
     if (page.truncated && !cursor) throw new ReleaseError("R2 returned an incomplete inventory page");
   } while (cursor);
   if (actual.size !== expected.size || [...actual].some(key => !expected.has(key))) throw new ReleaseError("R2 objects differ from release inventory");
-  // Read back the uploaded bytes, not uploader-provided object metadata.
-  for (const file of inventory) {
-    const bytes = await readVerifiedObject(bucket, file.key, file);
-    inspect?.(file, bytes);
-  }
+  // Read every uploaded byte, not uploader-provided metadata. Bound concurrent
+  // reads so R2 round-trip latency does not accumulate across the whole release.
+  // Join in-flight checks even after a failure; callers can never seal or switch
+  // a release while an inventory check remains unresolved.
+  let index = 0, stopped = false;
+  const checks = await Promise.allSettled(Array.from({ length: Math.min(4, inventory.length) }, async () => {
+    while (!stopped) {
+      const file = inventory[index++];
+      if (!file) return;
+      try {
+        const bytes = await readVerifiedObject(bucket, file.key, file);
+        inspect?.(file, bytes);
+      } catch (error) { stopped = true; throw error; }
+    }
+  }));
+  for (const check of checks) if (check.status === "rejected") throw check.reason;
 }
 
 export type ReleaseIdentity = { commit: string; release: string; inventory_digest: string };

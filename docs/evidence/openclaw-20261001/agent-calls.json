@@ -1,0 +1,62 @@
+{
+  "source": "OpenClaw local agent transcript",
+  "session_id": "gisul-loader-live-20261001",
+  "model": "openai/gpt-5.5",
+  "agent_harness": "codex",
+  "calls": [
+    {
+      "tool": "gisul.search_skills",
+      "arguments": {
+        "mode": "discovery",
+        "query": "시안 비교"
+      }
+    },
+    {
+      "tool": "gisul.load_skill",
+      "arguments": {
+        "uri": "skill://gisul/gisul/dont-make-me-think/SKILL.md",
+        "commit": "054052e608b6ea35eea59480917121a8ee30f3e0"
+      }
+    },
+    {
+      "tool": "gisul.read_skill_file",
+      "arguments": {
+        "uri": "skill://gisul/gisul/dont-make-me-think/references/sources-and-testing.md",
+        "skill_uri": "skill://gisul/gisul/dont-make-me-think/SKILL.md",
+        "load_id": "054052e608b6ea35eea59480917121a8ee30f3e0.abcf930e573332c1840ec70581631ff102d91afe2364ffe73b39d3feefffe490"
+      }
+    }
+  ],
+  "results": [
+    {
+      "tool": "gisul.search_skills",
+      "is_error": false,
+      "release": "20261001.19",
+      "commit": "054052e608b6ea35eea59480917121a8ee30f3e0",
+      "totalMatches": 2
+    },
+    {
+      "tool": "gisul.load_skill",
+      "is_error": false,
+      "release": "20261001.19",
+      "commit": "054052e608b6ea35eea59480917121a8ee30f3e0",
+      "uri": "skill://gisul/gisul/dont-make-me-think/SKILL.md",
+      "digest": "sha256:c4567cd20a26a29e2ce94770d44857996dc841c3bd31818768897e1dd4b28f18",
+      "digest_verified": true
+    },
+    {
+      "tool": "gisul.read_skill_file",
+      "is_error": false,
+      "release": "20261001.19",
+      "commit": "054052e608b6ea35eea59480917121a8ee30f3e0",
+      "uri": "skill://gisul/gisul/dont-make-me-think/references/sources-and-testing.md",
+      "digest": "sha256:5f897c607ba3eb676cd441d5c4177771d1c75f38ef409e75aa240020d34c30ba",
+      "digest_verified": true
+    }
+  ],
+  "limits": [
+    "This agent session uses the Codex harness; isolated native-mcp.json separately proves the new bundle bridge.",
+    "No channel delivery or Gateway restart."
+  ],
+  "transcript_sha256": "d8de204ab92ace781efdaec1b382c56f6097dac01c4d8580fdadd40ba7288d38"
+}

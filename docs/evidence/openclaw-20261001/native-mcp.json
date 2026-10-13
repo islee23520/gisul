@@ -1,0 +1,28 @@
+{
+  "verified": true,
+  "observed_at": "2026-10-01T07:05:50.436Z",
+  "openclaw_version": "2026.7.1-2",
+  "connection": "installed bundle through native OpenClaw MCP runtime; no inherited Codex MCP config",
+  "tools": [
+    "load_skill",
+    "read_skill_file",
+    "search_skills"
+  ],
+  "search": {
+    "query": "시안 비교",
+    "matches": 2
+  },
+  "release": "20261001.19",
+  "commit": "054052e608b6ea35eea59480917121a8ee30f3e0",
+  "skill": {
+    "uri": "skill://gisul/gisul/dont-make-me-think/SKILL.md",
+    "digest": "sha256:c4567cd20a26a29e2ce94770d44857996dc841c3bd31818768897e1dd4b28f18",
+    "digest_verified": true
+  },
+  "supporting_file": {
+    "uri": "skill://gisul/gisul/dont-make-me-think/references/sources-and-testing.md",
+    "digest": "sha256:5f897c607ba3eb676cd441d5c4177771d1c75f38ef409e75aa240020d34c30ba",
+    "digest_verified": true
+  },
+  "credential_contents_logged": false
+}

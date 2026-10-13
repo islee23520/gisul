@@ -7,4 +7,4 @@ dist/
 .DS_Store
 .omo/
 .docker/
-
+worker/wrangler.team.generated.json

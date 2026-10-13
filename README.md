@@ -1,27 +1,102 @@
-# gisul
+<p align="center"><a href="README.md">English</a> · <a href="README.ko.md">한국어</a></p>
 
-`gisul` is a personal MCP skill registry for serving Git-managed `SKILL.md` instruction bundles on demand.
+<p align="center">
+  <img src="docs/assets/gisul-workshop.png" alt="A mechanical arm selects an instruction card from a workshop cabinet and brings it to a verification bench" width="100%">
+</p>
 
-The name comes from 기술, Korean for "skill", "craft", or "technique".
+<h1 align="center">gisul</h1>
+<p align="center"><strong>You uploaded tacit knowledge? Cut the bullshit.</strong><br>Stop selling magic. Give your agent a procedure.</p>
+<p align="center">
+  <a href="#get-started">Get started</a> ·
+  <a href="https://github.com/changeroa/gisul-skills">Explore skills</a> ·
+  <a href="docs/technical-reference.md">Technical reference</a> ·
+  <a href="https://github.com/changeroa/gisul/issues">Report an issue</a>
+</p>
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/changeroa/gisul?style=flat-square&color=c6492d" alt="License"></a>
+  <img src="https://img.shields.io/badge/interface-MCP-242424?style=flat-square" alt="MCP interface">
+  <img src="https://img.shields.io/badge/skills-loaded_on_demand-c6492d?style=flat-square" alt="Skills loaded on demand">
+</p>
 
-This repo contains two small packages:
+---
 
-- `server/`: a Node.js MCP server that exposes local skill directories over stdio or Streamable HTTP.
-- `worker/`: an authenticated MCP server that reads immutable releases directly from a private R2 bucket.
+## You didn't upload expertise. You wrote a prompt.
 
-The intended deployment is:
+**A few lines of instructions don't turn a model into a seasoned practitioner.**
 
-```text
-Git main -> GitHub Actions validation/evaluation -> immutable R2 release
-                                                       ^
-Codex plugin / MCP client -> authenticated Worker -------+
+“Think like an expert.” “Review this carefully.” “Use your best judgment.”
+
+Fine. What should it read? What should it check? What evidence lets it call the job done?
+
+**gisul is an MCP skill registry that finds and delivers those working instructions.** Agents discover and read Git-managed `SKILL.md` bundles and supporting material when they need them. You don't copy every skill into every agent's directory.
+
+Craftsmanship in a text file? No. **A procedure the agent can at least try to follow? That's the point.**
+
+## Concrete instructions. Verifiable results.
+
+| The vague request | The procedure to load instead |
+| --- | --- |
+| “Make the UI good.” | Distinguish loading, empty results, missing permissions, and failures. Check the next action in each state. |
+| “Review the code carefully.” | Select reviews that match the change's risks. Recheck findings against source code and counterevidence. |
+| “The tests pass, right?” | Follow save, failure, recovery, and re-entry—not just a single button click. |
+
+These workflows live in [gisul-skills](https://github.com/changeroa/gisul-skills). **gisul delivers the instructions. gisul-skills maintains their content.** Reading a skill is not proof that the work succeeded.
+
+## Find what matters. Load what you need.
+
+```mermaid
+flowchart LR
+    A[User task] --> B[Find relevant skills]
+    B --> C[Read selected instructions]
+    C --> D[Read supporting material]
+    D --> E[Agent execution and verification]
+    G[Git-managed skill repository] --> R[Verified immutable release]
+    R --> C
+    R --> D
 ```
 
-## Why
+- **Load on demand.** Clients carry a small loader. Workflow content stays remote.
+- **Read a consistent version.** Keep instructions and supporting files pinned to the selected release, with file integrity checks.
+- **Different agents, shared content.** Supported clients discover the same immutable remote releases.
+- **Instructions are not permissions.** Loading a skill does not expand execution authority. Host approval and security policies still apply.
 
-This project is an experiment around "skills over MCP": instead of copying every skill into every agent runtime, a client can discover and load task-specific instruction bundles from a personal MCP server.
+## Get started
 
-Git is the source of truth. The Worker reads a verified release from R2; the Codex plugin keeps a small loader and reads selected skills and supporting files only when needed. The Node server remains available for local development and existing stdio integrations.
+**Just browsing? Start with [gisul-skills](https://github.com/changeroa/gisul-skills).**
+
+To connect an agent, follow the installation and authentication guide for your runtime. You need access to the Gisul deployment you connect to. Reading this public repository does not grant access to a hosted server.
+
+| Runtime | Installation and connection |
+| --- | --- |
+| Codex | [Personal plugin](clients/codex/README.md) · [ARKPOINT team HTTPS plugin](docs/arkpoint-plugin.md) |
+| OpenClaw | [Bundle, loader, and OAuth connection](clients/openclaw/README.md) |
+| oh-my-openagent / OmO 5 | [Installer and loader](clients/oh-my-openagent/README.md) |
+| Gajae Code | [Interview, planning, and execution integration](clients/gajae-code/README.md) |
+
+Once connected, ask:
+
+> Find and read the relevant skills on Gisul, then apply them to this task. Distinguish what you verified from what you haven't checked.
+
+The ARKPOINT team deployment uses separate organization authentication. Personal catalogs are not automatically exposed to the team.
+
+<details>
+<summary><strong>Want to run the server yourself?</strong></summary>
+
+With Node.js and npm installed:
+
+```sh
+git clone https://github.com/changeroa/gisul.git
+cd gisul
+npm --prefix server ci
+npm --prefix server run build
+node server/dist/index.js --http
+```
+
+The default HTTP endpoint is `POST http://127.0.0.1:8788/mcp`. Default skill roots are `~/gisul/skills`, `~/.codex/skills`, and `~/.agents/skills`. Starting a local server does not automatically connect it to a hosted catalog.
+
+For production deployment, authentication, and release publication, see the [deployment guide](docs/deployment.md) and [technical reference](docs/technical-reference.md).
+
+</details>
 
 ## Windows Docker deployment
 
@@ -38,76 +113,24 @@ out, built with Docker Compose, started with `--wait`, and recorded in
 `.docker/deployed-commit`. The existing container stays active while the new image
 is building. Runtime state and skills remain outside Git through bind mounts.
 
-## Packages
+## What's in the box
 
-### Server
+| Path | Responsibility |
+| --- | --- |
+| [`server/`](server/) | Node.js MCP server exposing local directories over stdio or Streamable HTTP |
+| [`worker/`](worker/) | Cloudflare Worker handling authentication and immutable R2 release reads |
+| [`clients/`](clients/) | Runtime-specific installers and small skill loaders |
+| [`plugins/gisul/`](plugins/gisul/) | Native HTTPS team plugin |
+| [gisul-skills](https://github.com/changeroa/gisul-skills) | Independently versioned workflow content |
 
-```bash
-cd server
-npm install
-npm run build
-node dist/index.js --http
-```
+## Where the claims stop
 
-Default HTTP endpoint:
+This started as a personal project. Reading instructions doesn't make an agent an expert. Passing tests doesn't establish production readiness. Check a deployment's actual publication, authentication, discovery, and file-read evidence before treating it as ready.
 
-```text
-POST http://127.0.0.1:8788/mcp
-```
+[Technical reference](docs/technical-reference.md) · [Deployment and rollback](docs/deployment.md) · [Connection diagnostics](docs/connection-diagnostics.md) · [Skill packs](docs/native-packs.md)
 
-Default skill roots:
+## Contributing
 
-- `~/gisul/skills`
-- `~/.codex/skills`
-- `~/.agents/skills`
+Broken connection? [Open an issue](https://github.com/changeroa/gisul/issues) with reproduction steps and sanitized errors. Code changes should include verification evidence. Propose workflow content in [gisul-skills](https://github.com/changeroa/gisul-skills). Keep tokens and personal data out of reports.
 
-### Worker
-
-```bash
-npm --prefix server ci
-npm --prefix server run build
-npm --prefix worker ci
-npm --prefix worker run typecheck
-npm --prefix worker test
-cd worker
-npx wrangler versions upload --dry-run
-```
-
-The Worker uses `SKILLS_BUCKET`, `GISUL_BEARER_TOKEN` for MCP readers, and a separate `GISUL_PUBLISH_TOKEN` for release publication. See [deployment and publication](docs/deployment.md) for the release format, verification, rollback, and production gates. The skill repository's builder/evaluation workflow and real release evidence must be connected before production activation.
-
-## Skills extension (SEP-2640)
-
-The server and Worker implement the [SEP-2640 Skills Extension](https://github.com/modelcontextprotocol/modelcontextprotocol/pull/2640) (`io.modelcontextprotocol/skills`):
-
-- `skills/list` and `skills/get` extension methods with per-file `{uri, digest, size}` resource manifests
-- every skill file readable through the standard `resources/read` resource primitive
-- `resources/directory/read` for scoped directory navigation (declared via `directoryRead: true`)
-- URIs carry the file path explicitly: `skill://<authority>/<source>/<skill-name>/SKILL.md`
-- skills need `name` and `description` frontmatter with `name` matching the directory name; nested skills get their own entries; each skill is limited to 512 files and 16 MiB total. The Worker rejects invalid release manifests; the Node server logs and skips invalid local skills.
-
-The Node server also retains the older `skills_list` / `skills_get` / `resources_read` tools as a compatibility layer.
-
-## Codex integration
-
-The [Codex plugin](clients/codex/README.md) lets Codex search remote
-skills, load a selected skill, and read supporting files with per-file integrity
-checks. Build the plugin with `cd server && npm run build:codex-plugin` and install
-it from a Codex marketplace. It bundles the MCP adapter and the small Gisul loader;
-remote skills stay on the server.
-
-## Authentication
-
-The Worker validates its MCP bearer before reading R2. Its publication bearer is a separate secret; Cloudflare account authentication is used to manage the Worker and bucket. The Node HTTP server supports:
-
-- bearer token validation for `/mcp`
-- a public token request endpoint
-- an admin dashboard for approving token requests
-- hashed storage for issued tokens
-
-No real secrets are included in this repository. The files in `server/ops/` are templates and must be adjusted before use.
-
-## Current status
-
-This is a personal prototype. Local Worker tests cover authenticated direct serving, immutable uploads, full inventory verification, concurrent pointer updates, rollback, and release-pinned bridge reads. Production acceptance additionally requires a successful GitHub Actions publication, actual installed-plugin reads, and matching Langfuse release/commit evidence.
-
-See [docs/SESSION_CONTEXT.md](docs/SESSION_CONTEXT.md) for the session handoff context behind this version.
+[MIT License](LICENSE) · *gisul* comes from the Korean word for skill, craft, or technique.

@@ -1,0 +1,45 @@
+{
+  "verified": true,
+  "observed_at": "2026-10-01T07:28:52.472Z",
+  "source_commit": "37357fecbfddab8236a688c2e5273c7bf37b0654",
+  "adapter_sha256": "sha256:c0fecf313c5e77e41ba4b059f1347e4a40a43cd00e85def165c8c2925774625f",
+  "connection": "native OpenClaw MCP runtime with only the existing Gisul connection and upgraded adapter; no inherited Codex connection",
+  "tools": [
+    "load_skill",
+    "read_skill_file",
+    "search_skills"
+  ],
+  "schemas": {
+    "load_skill": [
+      "uri",
+      "commit"
+    ],
+    "read_skill_file": [
+      "skill_uri",
+      "uri",
+      "load_id"
+    ],
+    "search_skills": [
+      "query",
+      "mode",
+      "commit",
+      "limit",
+      "offset"
+    ]
+  },
+  "release": "20260929.38",
+  "commit": "cb56c1ade59bd999e8ae859bd19d0b030ab8c03c",
+  "load_id": "566bcf2eb083f16e0e93dbd04a3b2c3116b02e186a24d9e10e8386129b50d52b",
+  "skill": {
+    "uri": "skill://gisul/gisul/dont-make-me-think/SKILL.md",
+    "digest": "sha256:a7fc99986500f25bb4acbc7bae138412a895d43d1437fc943fdfb21c56ba5e88",
+    "digest_verified": true
+  },
+  "supporting_file": {
+    "uri": "skill://gisul/gisul/dont-make-me-think/references/sources-and-testing.md",
+    "body_sha256": "sha256:5f897c607ba3eb676cd441d5c4177771d1c75f38ef409e75aa240020d34c30ba",
+    "manifest_verified_by_adapter": true
+  },
+  "connection_id": "c_1790839728721_46239",
+  "credential_contents_logged": false
+}

@@ -1,0 +1,45 @@
+{
+  "source_commit": "37357fecbfddab8236a688c2e5273c7bf37b0654",
+  "host": "Mac mini",
+  "openclaw_version": "2026.9.3",
+  "installed_plugin": "/Users/iyen/.openclaw/extensions/gisul-openclaw",
+  "retained_release_directory": "/Users/iyen/.local/share/dev-tools/openclaw-gisul-loader/37357fecbfddab8236a688c2e5273c7bf37b0654",
+  "retention_reason": "Permanent installed adapter, source and deployment records; required by the active MCP registration",
+  "mode": "existing-mcp",
+  "existing_mcp_preserved_except_adapter_path": true,
+  "installed_bundle_hashes_match": true,
+  "bundle_files": {
+    "gisul-client.json": "8c0724b70ed317bdd7a0a10e811345cc3c9b6fe65c497944b95949c191dfe5a3",
+    "README.md": "f6c7e004fadd15635248f2f8698ea575c960305045869cfe787bc3b080892b40",
+    "package.json": "df82bd66eb7ad7e523e3c964eeb40b506046a61ad70453b5b985a51f01213db4",
+    ".codex-plugin/plugin.json": "8e6fa426cec54fba42838c78b92104cfacf219be81862396e150a249953f3c9b",
+    "skills/gisul/SKILL.md": "ada7f6972f1265c899f2872009f85950180a3a7e6397688b5163377bbea910be",
+    "hooks/gisul-discovery/handler.js": "9a87eeb98b2494c33e4e6316b7317e83b0f11f72afbbe73a3ea1a5620646c1ad",
+    "hooks/gisul-discovery/HOOK.md": "9b6101450b78c01607e4b67aae6d7ee27052014c7a7f479e91a7b242e88da1ea"
+  },
+  "remote_service_changed": false,
+  "channel_delivery": false,
+  "skill": [
+    {
+      "name": "gisul",
+      "eligible": true,
+      "disabled": false,
+      "modelVisible": true
+    }
+  ],
+  "hook": [
+    {
+      "name": "gisul-discovery",
+      "eligible": true,
+      "disabled": false,
+      "enabledByConfig": true,
+      "loadable": true,
+      "pluginId": "gisul-openclaw"
+    }
+  ],
+  "gateway": {
+    "rpc_ok": true,
+    "runtime_status": "running",
+    "restart_mode": "wait 0, preserve-definition"
+  }
+}

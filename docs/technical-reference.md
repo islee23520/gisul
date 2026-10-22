@@ -1,6 +1,6 @@
 # gisul
 
-For ARKPOINT team distribution, see [the native HTTPS Codex plugin](../docs/arkpoint-plugin.md). It connects directly to Cloudflare Workers; neither clients nor deployment require a Mac mini. The team plugin is at `plugins/gisul`, with the Git marketplace in `.agents/plugins/marketplace.json`. Production readiness and prerequisites are documented separately from local verification.
+For a self-hosted team deployment, see [the native HTTPS Codex plugin](team-plugin.md). It connects directly to Cloudflare Workers; neither clients nor deployment require a Mac mini. The team plugin is at `plugins/gisul`, with the Git marketplace in `.agents/plugins/marketplace.json`. Production readiness and prerequisites are documented separately from local verification.
 
 `gisul` is a personal MCP skill registry for serving Git-managed `SKILL.md` instruction bundles on demand.
 
@@ -23,7 +23,7 @@ Codex plugin / MCP client -> authenticated Worker -------+
 
 | Runtime | Client | Connection |
 | --- | --- | --- |
-| Codex | [ARKPOINT plugin](../docs/arkpoint-plugin.md) | Native HTTPS + OAuth |
+| Codex | [HTTPS plugin](team-plugin.md) | Native HTTPS + OAuth |
 | oh-my-openagent / OmO 5 (`omo-ai`) | [Installer and loader](../clients/oh-my-openagent/README.md) | OAuth stdio bridge, discovery extension |
 | Gajae Code (`gjc`) | [Installer and workflow integration](../clients/gajae-code/README.md) | OAuth stdio bridge, deep-interview sub-skill, executor appendix |
 | OpenClaw | [Bundle and loader](../clients/openclaw/README.md) | OAuth stdio bridge, in-memory bootstrap discovery hook |
@@ -37,6 +37,21 @@ This project is an experiment around "skills over MCP": instead of copying every
 Git is the source of truth. The Worker reads a verified release from R2; the Codex plugin keeps a small loader and reads selected skills and supporting files only when needed. The Node server remains available for local development and existing stdio integrations.
 
 ## Packages
+
+### Verify the checkout
+
+Use Node.js 24 and npm, then run:
+
+```sh
+node scripts/verify.mjs
+```
+
+The command resolves paths from its own checkout, not the caller's working
+directory. It installs both packages with `npm ci`, builds and tests the server,
+checks the synthetic search benchmark and Codex plugin, typechecks and tests
+the Worker, checks the team plugin, and runs the team, direct and OAuth Worker
+dry runs. CI calls the same command. The first failure stops verification.
+No live endpoint, Cloudflare login, deployment or content publication is required.
 
 ### Server
 

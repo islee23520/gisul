@@ -1,6 +1,6 @@
 # Deployment
 
-For the ARKPOINT native plugin, use [GitHub Actions deployment](arkpoint-plugin.md#provision-and-deploy-no-mac-mini). `worker/src/team.ts` serves native MCP tools and OAuth directly from Cloudflare. Mac mini clients use the same HTTPS connection as any other machine. The Mac mini instructions below are retained only for the older personal deployment and rollback; they are not team deployment prerequisites.
+For a self-hosted team OAuth Worker, see [team plugin setup](team-plugin.md). `worker/src/team.ts` serves native MCP tools and OAuth directly from Cloudflare. The Mac mini instructions below cover the personal deployment.
 
 ## Worker and private R2
 
@@ -9,6 +9,10 @@ The Worker in this checkout serves `/mcp` directly from `SKILLS_BUCKET`. It has 
 The production machine endpoint is `https://gisul-mcp.changeroa.workers.dev/mcp`; the publication origin is the same URL without `/mcp`. Its stable workers.dev route is enabled on the existing Worker, with bearer authentication enforced by the Worker. The custom domain `gisul.iyendev.com` also routes to this version, but its zone can return a browser challenge to unattended clients. GitHub Actions and the installed plugin use the stable workers.dev endpoint. Do not depend on a preview alias for ongoing publication or disable security across unrelated zone traffic.
 
 Production activation requires a gated real release published by GitHub Actions, actual installed-plugin reads, and matching Langfuse evidence. Structural migration of unchanged content uses Git-byte and manifest parity; model evaluations and human ratings are optional under the 2026-09-21 user policy. Validation, integrity, latest-main and conditional activation remain required. Local fixture tests do not establish those production results.
+
+For subsequent delivery checks, configure the [read-only production canary](production-canary.md)
+with an independently verified runtime commit and retained inventory snapshot.
+Its scheduled workflow is opt-in and does not activate or publish releases.
 
 ### Current protocol and client
 

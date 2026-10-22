@@ -66,7 +66,7 @@ flowchart LR
 
 | 사용 환경 | 설치·연결 안내 |
 | --- | --- |
-| Codex | [개인용 플러그인](clients/codex/README.md) · [ARKPOINT 팀용 HTTPS 플러그인](docs/arkpoint-plugin.md) |
+| Codex | [개인용 플러그인](clients/codex/README.md) · [팀 자체 호스팅 HTTPS 플러그인](docs/team-plugin.md) |
 | OpenClaw | [번들·로더·OAuth 연결](clients/openclaw/README.md) |
 | oh-my-openagent / OmO 5 | [설치기와 로더](clients/oh-my-openagent/README.md) |
 | Gajae Code | [인터뷰·계획·실행 연결](clients/gajae-code/README.md) |
@@ -75,7 +75,7 @@ flowchart LR
 
 > Gisul에서 이 작업에 맞는 스킬을 찾아 읽고 적용해줘. 무엇을 확인했고 무엇은 아직 확인하지 못했는지 구분해줘.
 
-ARKPOINT 팀용 배포는 별도의 조직 인증을 사용한다. 개인 카탈로그가 자동으로 팀에 공개되지는 않는다.
+팀 배포는 설정한 GitHub 조직으로 인증한다. 개인 카탈로그가 자동으로 팀에 공개되지는 않는다.
 
 <details>
 <summary><strong>직접 서버를 실행하고 싶다면</strong></summary>
@@ -113,6 +113,10 @@ node server/dist/index.js --http
 [기술 레퍼런스](docs/technical-reference.md) · [배포와 롤백](docs/deployment.md) · [연결 진단](docs/connection-diagnostics.md) · [스킬 팩](docs/native-packs.md)
 
 ## 기여
+
+Node.js 24와 npm을 설치한 뒤 체크아웃에서 `node scripts/verify.mjs`를 실행하면
+CI와 같은 잠금 의존성 설치, 빌드, 테스트, 검색·플러그인 검사, Worker dry-run을
+순서대로 수행한다. 배포하거나 콘텐츠를 발행하지는 않는다.
 
 연결이 깨졌다면 재현 조건과 비밀값을 제거한 오류를 [이슈](https://github.com/changeroa/gisul/issues)에 남겨주세요. 코드 변경에는 재현·검증 근거를, 스킬 제안에는 [내용 저장소](https://github.com/changeroa/gisul-skills/blob/main/README.ko.md)를 사용합니다. 토큰이나 개인 데이터는 올리지 마세요.
 

@@ -15,6 +15,8 @@ import express from "express";
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import { JSONRPCRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { ServerProtocolTransport, MODERN_VERSION, VERSION_KEY, CAPS_KEY, cacheHints, decodeHeader } from "./protocol.js";
+import { identityFromEnv, classifyClientName, guidanceFor, NEUTRAL_IDENTITY } from "./client-identity.js";
+
 import type { Request, Response } from "express";
 import { z } from "zod";
 import { parse as parseYaml } from "yaml";
@@ -782,7 +784,7 @@ function asJsonText(value: unknown) {
   };
 }
 
-function registerSkillarTools(server: McpServer): void {
+function registerGisulTools(server: McpServer, identity: () => import("./client-identity.js").ClientIdentity = () => NEUTRAL_IDENTITY): void {
   server.registerTool(
     "skills_list",
     {
@@ -813,7 +815,8 @@ function registerSkillarTools(server: McpServer): void {
 
       const { record } = parseSkillUri(selected.uri);
       const { markdown, filePath } = await readSkillMarkdown(record);
-      return asJsonText({ name: selected.name, source: selected.source, uri: selected.uri, path: filePath, markdown });
+      const ident = identity();
+      return asJsonText({ name: selected.name, source: selected.source, uri: selected.uri, path: filePath, markdown, client: { identity: { kind: ident.kind, name: ident.name ?? null, source: ident.source }, guidance: guidanceFor(ident) } });
     },
   );
 
@@ -829,7 +832,8 @@ function registerSkillarTools(server: McpServer): void {
     async ({ uri }) => {
       const { record, relativePath } = parseSkillUri(uri);
       const { text, filePath } = await readSkillResource(record, relativePath);
-      return asJsonText({ uri, path: filePath, text });
+      const ident = identity();
+      return asJsonText({ uri, path: filePath, text, client: { identity: { kind: ident.kind, name: ident.name ?? null, source: ident.source }, guidance: guidanceFor(ident) } });
     },
   );
 }
@@ -922,7 +926,7 @@ function registerSkillWriteTools(server: McpServer): void {
   });
 }
 
-function createSkillarServer(writable = false): McpServer {
+function createSkillarServer(writable = false, identity: () => import("./client-identity.js").ClientIdentity = () => NEUTRAL_IDENTITY): McpServer {
   const server = new McpServer(
     {
       name: "skillar",
@@ -937,7 +941,7 @@ function createSkillarServer(writable = false): McpServer {
       },
     },
   );
-  registerSkillarTools(server);
+  registerGisulTools(server, identity);
   if (writable) registerSkillWriteTools(server);
   registerSkillsExtension(server);
   return server;
@@ -1217,9 +1221,11 @@ async function showDashboard(req: Request, res: Response, adminToken: string | u
 }
 
 async function startStdio(): Promise<void> {
-  const server = createSkillarServer(true);
-  const transport = new StdioServerTransport();
-  await server.connect(new ServerProtocolTransport(transport));
+  const envIdentity = identityFromEnv();
+  const broker = new ServerProtocolTransport(new StdioServerTransport());
+  const identity: () => import("./client-identity.js").ClientIdentity = () => envIdentity ?? { kind: classifyClientName(broker.clientIdentity?.name), name: broker.clientIdentity?.name, version: broker.clientIdentity?.version, source: broker.clientIdentity ? "initialize" : "unknown" };
+  const server = createSkillarServer(true, identity);
+  await server.connect(broker);
 }
 
 async function startHttp(): Promise<void> {

@@ -102,7 +102,7 @@ async function main() {
       try {
         const response = await fetch(healthUrl, { signal: AbortSignal.timeout(2000) });
         const data = await response.json();
-        if (response.ok && data.ok && data.service === "gisul") return;
+        if (response.ok && data.ok && data.service === "skillar") return;
       } catch {}
       await new Promise(resolve => setTimeout(resolve, 500));
     }
@@ -120,7 +120,7 @@ async function main() {
   };
   const result = await deploy(config, {
     prepare: async stage => {
-      await access(join(stage, "bin/gisul"), constants.X_OK);
+      await access(join(stage, "bin/skillar"), constants.X_OK);
       run("npm", ["ci", "--omit=dev", "--ignore-scripts"], { cwd: stage, timeout: 180000 });
     },
     restart,

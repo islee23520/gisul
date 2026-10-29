@@ -1,13 +1,13 @@
 {
-  "name": "gisul-openclaw",
+  "name": "skillar-openclaw",
   "version": "0.2.0",
-  "description": "Discover and read remote Gisul workflow skills and native skill packs in OpenClaw.",
+  "description": "Discover and read remote Skillar workflow skills and native skill packs in OpenClaw.",
   "author": {
-    "name": "Gisul"
+    "name": "Skillar"
   },
   "skills": "./skills/",
   "hooks": "./hooks/",
   "mcpServers": "./.mcp.json",
-  "repository": "https://github.com/changeroa/gisul",
+  "repository": "https://github.com/changeroa/skillar",
   "license": "MIT"
 }

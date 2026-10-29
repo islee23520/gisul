@@ -1,8 +1,8 @@
-# gisul
+# skillar
 
-For a self-hosted team deployment, see [the native HTTPS Codex plugin](team-plugin.md). It connects directly to Cloudflare Workers; neither clients nor deployment require a Mac mini. The team plugin is at `plugins/gisul`, with the Git marketplace in `.agents/plugins/marketplace.json`. Production readiness and prerequisites are documented separately from local verification.
+For a self-hosted team deployment, see [the native HTTPS Codex plugin](team-plugin.md). It connects directly to Cloudflare Workers; neither clients nor deployment require a Mac mini. The team plugin is at `plugins/skillar`, with the Git marketplace in `.agents/plugins/marketplace.json`. Production readiness and prerequisites are documented separately from local verification.
 
-`gisul` is a personal MCP skill registry for serving Git-managed `SKILL.md` instruction bundles on demand.
+`skillar` is a personal MCP skill registry for serving Git-managed `SKILL.md` instruction bundles on demand.
 
 The name comes from 기술, Korean for "skill", "craft", or "technique".
 
@@ -70,7 +70,7 @@ POST http://127.0.0.1:8788/mcp
 
 Default skill roots:
 
-- `~/gisul/skills`
+- `~/iyen-skills/skills`
 - `~/.codex/skills`
 - `~/.agents/skills`
 
@@ -86,7 +86,7 @@ cd worker
 npx wrangler versions upload --dry-run
 ```
 
-The Worker uses `SKILLS_BUCKET`, `GISUL_BEARER_TOKEN` for MCP readers, and a separate `GISUL_PUBLISH_TOKEN` for release publication. See [deployment and publication](../docs/deployment.md) for the release format, verification, rollback, and production gates. The skill repository's builder/evaluation workflow and real release evidence must be connected before production activation.
+The Worker uses `SKILLS_BUCKET`, `SKILLAR_BEARER_TOKEN` for MCP readers, and a separate `SKILLAR_PUBLISH_TOKEN` for release publication. See [deployment and publication](../docs/deployment.md) for the release format, verification, rollback, and production gates. The skill repository's builder/evaluation workflow and real release evidence must be connected before production activation.
 
 ## Skills extension (SEP-2640)
 
@@ -105,14 +105,14 @@ The Node server also retains the older `skills_list` / `skills_get` / `resources
 The [Codex plugin](../clients/codex/README.md) lets Codex search remote
 skills, load a selected skill, and read supporting files with per-file integrity
 checks. Build the plugin with `cd server && npm run build:codex-plugin` and install
-it from a Codex marketplace. It bundles the MCP adapter and the small Gisul loader;
+it from a Codex marketplace. It bundles the MCP adapter and the small Skillar loader;
 remote skills stay on the server.
 
 ## OpenClaw integration
 
 The [OpenClaw bundle](../clients/openclaw/README.md) adds a remote skill loader,
 a bootstrap discovery hook and a read-only OAuth MCP connection. Workflow
-skills remain on Gisul; installation and verification instructions are included.
+skills remain on Skillar; installation and verification instructions are included.
 
 ## Authentication
 

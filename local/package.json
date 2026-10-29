@@ -1,0 +1,50 @@
+{
+  "name": "skillar",
+  "version": "0.2.1",
+  "private": false,
+  "description": "Local skill router for coding agents: search your skills, trace how agents use them, and see the flow.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/changeroa/skillar.git",
+    "directory": "local"
+  },
+  "homepage": "https://github.com/changeroa/skillar/tree/main/local#readme",
+  "files": [
+    "dist",
+    "packs",
+    "docs",
+    "src/store/schema.sql",
+    "src/store/migrations",
+    "src/store/task-types.json",
+    "README.md"
+  ],
+  "type": "module",
+  "bin": {
+    "skillar": "dist/cli/main.js",
+    "gisool": "dist/cli/main.js"
+  },
+  "engines": {
+    "node": ">=24.15"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json && node build-dashboard.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p dashboard/tsconfig.json",
+    "test": "node --test \"test/**/*.test.mjs\"",
+    "start": "node dist/cli/main.js serve"
+  },
+  "dependencies": {
+    "express": "^5.2.1",
+    "yaml": "^2.9.0",
+    "zod": "^4.1.11"
+  },
+  "devDependencies": {
+    "@types/d3-sankey": "^0.12.4",
+    "@types/express": "^5.0.5",
+    "@types/node": "^24.3.0",
+    "d3-sankey": "0.12.3",
+    "esbuild": "^0.28.2",
+    "preact": "^10.27.2",
+    "typescript": "^5.9.2"
+  }
+}

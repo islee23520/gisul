@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "gisul-team",
+  "name": "skillar-team",
   "main": "src/team.ts",
   "compatibility_date": "2026-09-03",
   "compatibility_flags": [
@@ -15,11 +15,11 @@
   "r2_buckets": [
     {
       "binding": "SKILLS_BUCKET",
-      "bucket_name": "gisul-team-releases"
+      "bucket_name": "skillar-team-releases"
     }
   ],
   "vars": {
     "GITHUB_AUTH_MODE": "oauth",
-    "GISUL_PUBLISH_WORKFLOW": "publish.yml"
+    "SKILLAR_PUBLISH_WORKFLOW": "publish.yml"
   }
 }

@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "skillar": {
+      "command": "node",
+      "args": ["runtime/codex.mjs", "--origin", "macmini", "--", "ssh", "-T", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10", "macmini", "skillar"],
+      "cwd": ".",
+      "env": { "PATH": "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin" }
+    }
+  }
+}

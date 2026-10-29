@@ -16,17 +16,22 @@ function parseJson(text, source) {
 }
 
 export async function runCanary(env = process.env, fetcher = fetch) {
+  // Existing deployment configuration remains valid during the name migration.
+  env = { ...env };
+  for (const [key, value] of Object.entries(env)) {
+    if (key.startsWith("GISUL_CANARY_")) env[key.replace("GISUL_", "SKILLAR_")] ??= value;
+  }
   const receipt = { schema_version: 1, state: "failed", phase: "preflight",
     started_at: new Date().toISOString(), expected: null,
     checked: { skills: 0, resources: 0, packs: 0 } };
-  const secrets = [env.GISUL_CANARY_READER_TOKEN, env.GISUL_CANARY_INVENTORY_TOKEN].filter(Boolean);
+  const secrets = [env.SKILLAR_CANARY_READER_TOKEN, env.SKILLAR_CANARY_INVENTORY_TOKEN].filter(Boolean);
   try {
-    for (const key of ["GISUL_CANARY_MCP_URL", "GISUL_CANARY_READER_TOKEN", "GISUL_CANARY_EXPECTED_RUNTIME",
-      "GISUL_CANARY_INVENTORY_URL", "GISUL_CANARY_INVENTORY_SHA256"]) {
+    for (const key of ["SKILLAR_CANARY_MCP_URL", "SKILLAR_CANARY_READER_TOKEN", "SKILLAR_CANARY_EXPECTED_RUNTIME",
+      "SKILLAR_CANARY_INVENTORY_URL", "SKILLAR_CANARY_INVENTORY_SHA256"]) {
       assert.ok(typeof env[key] === "string" && env[key].trim(), `${key} is required`);
     }
-    const endpoint = new URL(env.GISUL_CANARY_MCP_URL);
-    const inventoryUrl = new URL(env.GISUL_CANARY_INVENTORY_URL);
+    const endpoint = new URL(env.SKILLAR_CANARY_MCP_URL);
+    const inventoryUrl = new URL(env.SKILLAR_CANARY_INVENTORY_URL);
     for (const url of [endpoint, inventoryUrl]) {
       assert.ok(url.protocol === "https:" || (url.protocol === "http:" && ["127.0.0.1", "[::1]", "localhost"].includes(url.hostname)),
         "Use HTTPS, or loopback HTTP for local verification");
@@ -34,8 +39,8 @@ export async function runCanary(env = process.env, fetcher = fetch) {
     }
     assert.equal(endpoint.pathname, "/mcp");
     assert.ok(!inventoryUrl.pathname.startsWith("/admin/"), "Expected inventory must not come from the administrative API");
-    assertCommit(env.GISUL_CANARY_EXPECTED_RUNTIME);
-    assert.match(env.GISUL_CANARY_INVENTORY_SHA256, /^sha256:[a-f0-9]{64}$/);
+    assertCommit(env.SKILLAR_CANARY_EXPECTED_RUNTIME);
+    assert.match(env.SKILLAR_CANARY_INVENTORY_SHA256, /^sha256:[a-f0-9]{64}$/);
     async function request(url, options) {
       const response = await fetcher(url, { ...options, redirect: "error", signal: AbortSignal.timeout(15000) });
       const bytes = Buffer.from(await response.arrayBuffer());
@@ -43,21 +48,21 @@ export async function runCanary(env = process.env, fetcher = fetch) {
       return bytes;
     }
     receipt.phase = "inventory";
-    const bytes = await request(inventoryUrl, { headers: env.GISUL_CANARY_INVENTORY_TOKEN
-      ? { authorization: `Bearer ${env.GISUL_CANARY_INVENTORY_TOKEN}` } : {} });
+    const bytes = await request(inventoryUrl, { headers: env.SKILLAR_CANARY_INVENTORY_TOKEN
+      ? { authorization: `Bearer ${env.SKILLAR_CANARY_INVENTORY_TOKEN}` } : {} });
     assert.ok(bytes.length <= 8 * 1024 * 1024, "Expected inventory exceeds the release limit");
-    assert.equal(await sha256(bytes), env.GISUL_CANARY_INVENTORY_SHA256);
+    assert.equal(await sha256(bytes), env.SKILLAR_CANARY_INVENTORY_SHA256);
     const document = parseJson(bytes.toString("utf8"), "Expected inventory");
     assertCommit(document?.commit);
-    const identity = { commit: document.commit, release: document.release, inventory_digest: env.GISUL_CANARY_INVENTORY_SHA256 };
+    const identity = { commit: document.commit, release: document.release, inventory_digest: env.SKILLAR_CANARY_INVENTORY_SHA256 };
     const { inventory, files } = parseInventory(bytes.toString("utf8"), identity);
-    receipt.expected = { ...identity, server_version: env.GISUL_CANARY_EXPECTED_RUNTIME };
+    receipt.expected = { ...identity, server_version: env.SKILLAR_CANARY_EXPECTED_RUNTIME };
     receipt.phase = "mcp";
     let id = 0;
     async function rpc(method, params = {}) {
       receipt.operation = method === "tools/call" ? params.name : method;
       const body = parseJson((await request(endpoint, { method: "POST", headers: {
-        authorization: `Bearer ${env.GISUL_CANARY_READER_TOKEN}`, "content-type": "application/json",
+        authorization: `Bearer ${env.SKILLAR_CANARY_READER_TOKEN}`, "content-type": "application/json",
         accept: "application/json, text/event-stream", "mcp-protocol-version": "2026-07-28", "mcp-method": method,
         ...(method === "resources/read" ? { "mcp-name": params.uri }
           : method === "tools/call" ? { "mcp-name": params.name } : {}),
@@ -70,14 +75,14 @@ export async function runCanary(env = process.env, fetcher = fetch) {
       assert.ok(!body.error, `MCP request failed (${Number.isInteger(body.error?.code) ? body.error.code : "no numeric code"})`);
       const result = body.result;
       assert.equal(result.resultType, "complete");
-      assert.equal(result._meta["io.modelcontextprotocol/serverInfo"].name, "gisul");
-      assert.equal(result._meta["io.modelcontextprotocol/serverInfo"].version, env.GISUL_CANARY_EXPECTED_RUNTIME);
+      assert.equal(result._meta["io.modelcontextprotocol/serverInfo"].name, "skillar");
+      assert.equal(result._meta["io.modelcontextprotocol/serverInfo"].version, env.SKILLAR_CANARY_EXPECTED_RUNTIME);
       return result;
     }
     function checkIdentity(meta) {
       assert.equal(meta.commit, identity.commit);
       assert.equal(meta.release, identity.release);
-      assert.equal(meta.server_version, env.GISUL_CANARY_EXPECTED_RUNTIME);
+      assert.equal(meta.server_version, env.SKILLAR_CANARY_EXPECTED_RUNTIME);
     }
     async function catalog() {
       const result = await rpc("skills/list");
@@ -87,7 +92,7 @@ export async function runCanary(env = process.env, fetcher = fetch) {
     const discovered = await rpc("server/discover");
     assert.ok(discovered.supportedVersions.includes("2026-07-28"));
     await catalog();
-    const pin = { "io.gisul/commit": identity.commit };
+    const pin = { "app.skillar/commit": identity.commit };
     for (const skill of inventory.skills) {
       const loaded = await rpc("skills/get", { uri: skill.uri, _meta: pin });
       checkIdentity(loaded._meta);
@@ -167,7 +172,7 @@ export async function runCanary(env = process.env, fetcher = fetch) {
   receipt.finished_at = new Date().toISOString();
   const text = JSON.stringify(receipt, (_key, value) => typeof value === "string"
     ? secrets.reduce((safe, secret) => safe.split(secret).join("[REDACTED]"), value) : value, 2) + "\n";
-  const path = env.GISUL_CANARY_RECEIPT ?? fileURLToPath(new URL("../dist/receipts/production-canary.json", import.meta.url));
+  const path = env.SKILLAR_CANARY_RECEIPT ?? fileURLToPath(new URL("../dist/receipts/production-canary.json", import.meta.url));
   await mkdir(dirname(path), { recursive: true });
   await writeFile(path, text, { mode: 0o600 });
   return JSON.parse(text);

@@ -7,4 +7,5 @@ dist/
 .DS_Store
 .omo/
 .docker/
+.senpi/
 worker/wrangler.team.generated.json

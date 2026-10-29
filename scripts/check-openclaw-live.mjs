@@ -10,11 +10,11 @@ import { pathToFileURL } from "node:url";
 
 const args = process.argv.slice(2);
 if (args.length !== 4 || args[0] !== "--openclaw-root" || args[2] !== "--plugin-root") {
-  throw new Error("Usage: node scripts/check-openclaw-live.mjs --openclaw-root /path/to/openclaw --plugin-root /profile/extensions/gisul-openclaw");
+  throw new Error("Usage: node scripts/check-openclaw-live.mjs --openclaw-root /path/to/openclaw --plugin-root /profile/extensions/skillar-openclaw");
 }
 const openclaw = resolve(args[1]), plugin = await realpath(resolve(args[3]));
-const workspace = await mkdtemp(join(tmpdir(), "gisul-openclaw-live-"));
-const cfg = { plugins: { allow: ["gisul-openclaw"], load: { paths: [plugin] }, entries: { "gisul-openclaw": { enabled: true } } } };
+const workspace = await mkdtemp(join(tmpdir(), "skillar-openclaw-live-"));
+const cfg = { plugins: { allow: ["skillar-openclaw"], load: { paths: [plugin] }, entries: { "skillar-openclaw": { enabled: true } } } };
 const sha = value => "sha256:" + createHash("sha256").update(value).digest("hex");
 let runtime;
 try {
@@ -29,17 +29,17 @@ try {
   assert.ok(loadMcp, "This OpenClaw build needs an updated live smoke adapter");
   const loaded = loadMcp({ cfg, workspaceDir: workspace });
   assert.deepEqual(loaded.diagnostics, []);
-  assert.deepEqual(Object.keys(loaded.config.mcpServers), ["gisul"]);
-  assert.equal(await realpath(loaded.config.mcpServers.gisul.args[0]), join(plugin, "scripts/bridge.mjs"));
+  assert.deepEqual(Object.keys(loaded.config.mcpServers), ["skillar"]);
+  assert.equal(await realpath(loaded.config.mcpServers.skillar.args[0]), join(plugin, "scripts/bridge.mjs"));
   const { createSessionMcpRuntime } = await import(pathToFileURL(join(openclaw, "dist/agents/agent-bundle-mcp-runtime.js")).href);
-  runtime = createSessionMcpRuntime({ sessionId: `gisul-live-${Date.now()}`, workspaceDir: workspace, cfg });
+  runtime = createSessionMcpRuntime({ sessionId: `skillar-live-${Date.now()}`, workspaceDir: workspace, cfg });
   const catalog = await runtime.getCatalog();
   assert.deepEqual(catalog.diagnostics ?? [], [], "MCP connection must succeed");
-  assert.deepEqual(Object.keys(catalog.servers), ["gisul"]);
+  assert.deepEqual(Object.keys(catalog.servers), ["skillar"]);
   const tools = catalog.tools.map(tool => tool.toolName).sort();
   assert.deepEqual(tools, ["load_skill", "read_skill_file", "search_skills"]);
   const call = async (name, input) => {
-    const result = await runtime.callTool("gisul", name, input);
+    const result = await runtime.callTool("skillar", name, input);
     assert.ok(!result.isError, `${name} returned an MCP error`);
     const text = result.content.find(item => item.type === "text")?.text;
     assert.ok(text, `${name} must return content`);

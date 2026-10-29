@@ -13,7 +13,7 @@ else {
   documents = await Promise.all((await readdir(root, { withFileTypes: true })).filter(d => d.isDirectory()).map(async d => {
     const markdown = await readFile(join(root, d.name, 'SKILL.md'), 'utf8');
     const meta = parse(markdown.slice(4, markdown.indexOf('\n---', 4)));
-    return { uri: `skill://gisul/gisul/${meta.name}/SKILL.md`, name: meta.name, description: meta.description, keywords: meta.keywords ?? [], automatic: meta['disable-model-invocation'] !== true, digest: 'benchmark-metadata-only' };
+    return { uri: `skill://skillar/iyen/${meta.name}/SKILL.md`, name: meta.name, description: meta.description, keywords: meta.keywords ?? [], automatic: meta['disable-model-invocation'] !== true, digest: 'benchmark-metadata-only' };
   }));
 }
 if (arg('--save-inventory')) await writeFile(arg('--save-inventory'), JSON.stringify(documents, null, 2) + '\n');

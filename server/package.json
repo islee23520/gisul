@@ -1,9 +1,10 @@
 {
-  "name": "gisul",
-  "version": "0.1.0",
+  "name": "skillar-mcp",
+  "version": "0.2.0",
   "private": false,
   "type": "module",
   "bin": {
+    "skillar-mcp": "./dist/index.js",
     "gisul": "./dist/index.js"
   },
   "scripts": {

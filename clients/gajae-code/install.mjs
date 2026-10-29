@@ -20,15 +20,19 @@ export async function install(options = {}) {
   const env = { ...process.env, GJC_CODING_AGENT_DIR: agentDir };
   const listed = spawnSync("gjc", ["plugin", "list", "--json", "--user"], { env, encoding: "utf8", timeout: 30000 });
   if (listed.error || listed.status !== 0) throw new Error("Could not inspect GJC plugins. Install a GJC version with native plugin bundle support, then retry.");
-  const installed = JSON.parse(listed.stdout).gjc?.find(item => item.identity?.name === "gisul" && item.identity.scope === "user");
+  const plugins = JSON.parse(listed.stdout).gjc ?? [];
+  if (plugins.some(item => ["gisul", "gisool"].includes(item.identity?.name) && item.identity.scope === "user")) {
+    throw new Error("A legacy Gisul prompt bundle is installed; preserve and migrate it with GJC before installing Skillar to avoid duplicate discovery hooks");
+  }
+  const installed = plugins.find(item => item.identity?.name === "skillar" && item.identity.scope === "user");
   if (installed) {
     if (!installed.enabled || installed.quarantined || installed.surfaces.some(surface => !surface.enabled || surface.quarantined)) {
-      throw new Error("The installed Gisul bundle has disabled or quarantined surfaces; resolve its GJC plugin status before installing");
+      throw new Error("The installed Skillar bundle has disabled or quarantined surfaces; resolve its GJC plugin status before installing");
     }
     for (const file of ["gajae-plugin.json", "prompts/discovery.md", "prompts/executor.md", "subskills/interview/SKILL.md"]) {
       const source = await readFile(join(here, "plugin", file));
-      const target = await readFile(join(agentDir, "gjc-plugins/gisul", file));
-      if (!source.equals(target)) throw new Error("A different Gisul bundle is installed. Review gjc plugin upgrade gisul --user for this profile, then rerun the installer.");
+      const target = await readFile(join(agentDir, "gjc-plugins/skillar", file));
+      if (!source.equals(target)) throw new Error("A different Skillar bundle is installed. Review gjc plugin upgrade skillar --user for this profile, then rerun the installer.");
     }
   }
   // GJC owns bundle validation, registry writes, hashes, and collision handling.
@@ -40,7 +44,7 @@ export async function install(options = {}) {
   }
   summary.plugin.action = installed ? "unchanged" : "installed";
   try { summary.backups = await applyFiles(files); }
-  catch (error) { throw new Error(`The Gisul prompt plugin is installed, but MCP setup failed: ${error.message}. Correct the config and rerun this installer.`); }
+  catch (error) { throw new Error(`The Skillar prompt plugin is installed, but MCP setup failed: ${error.message}. Correct the config and rerun this installer.`); }
   return summary;
 }
 

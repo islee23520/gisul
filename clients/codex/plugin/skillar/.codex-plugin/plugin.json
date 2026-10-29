@@ -1,0 +1,21 @@
+{
+  "name": "skillar",
+  "version": "0.1.0",
+  "description": "Search, read, create, and update remote workflow skills over SSH with integrity and conflict checks.",
+  "author": {
+    "name": "Victor"
+  },
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Skillar",
+    "shortDescription": "Mac mini의 워크플로 스킬을 찾아 적용합니다.",
+    "longDescription": "Find and apply verified remote workflows, or create and update SKILL.md content with version conflict protection.",
+    "developerName": "Victor",
+    "category": "Productivity",
+    "capabilities": [],
+    "defaultPrompt": [
+      "Skillar에서 이 작업에 맞는 스킬을 찾아 적용해줘."
+    ]
+  }
+}

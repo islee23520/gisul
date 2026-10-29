@@ -1,14 +1,14 @@
 {
-  "name": "gisul",
+  "name": "skillar",
   "interface": {
-    "displayName": "Gisul"
+    "displayName": "Skillar"
   },
   "plugins": [
     {
-      "name": "gisul",
+      "name": "skillar",
       "source": {
         "source": "local",
-        "path": "./plugins/gisul"
+        "path": "./plugins/skillar"
       },
       "policy": {
         "installation": "AVAILABLE",

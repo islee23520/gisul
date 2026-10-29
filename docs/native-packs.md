@@ -1,6 +1,6 @@
 # Native skill packs
 
-Packs are independent JSON resources in the configured `GISUL_SKILLS_REPOSITORY` at `packs/<name>.json`. They reference canonical skills without embedding instructions. The team HTTPS Worker exposes `search_packs`, `load_pack`, `create_pack`, `update_pack`, and `get_pack_write_status` to Codex; OAuth read/write scopes and organization checks are shared with skills. The legacy local Node registry does not serve packs.
+Packs are independent JSON resources in the configured `SKILLAR_SKILLS_REPOSITORY` at `packs/<name>.json`. They reference canonical skills without embedding instructions. The team HTTPS Worker exposes `search_packs`, `load_pack`, `create_pack`, `update_pack`, and `get_pack_write_status` to Codex; OAuth read/write scopes and organization checks are shared with skills. The legacy local Node registry does not serve packs.
 
 ## Definition and composition
 
@@ -8,7 +8,7 @@ Schema version 1 has `kind: "skill-pack"`, `name`, `display_name`, `description`
 
 `search_packs` takes subject/outcome terms and returns metadata, member roles/conditions, registration attribution, digest and commit. Use `mode: "explicit"` for a requested pack or bounded catalog listing. Discovery never activates instructions.
 
-`load_pack({uris: ["pack://gisul/gisul/backend-pack", "pack://gisul/gisul/frontend-pack"], commit})` resolves definitions and members at one immutable catalog commit. It checks pack bytes, returns member SKILL.md and manifest digests and invocation policy, and reads no skill bodies. Shared canonical URIs occur once, with every source pack's conditions retained. Conflicting phases or different scope/verifier identities reject composition. The caller selects applicable members, records exclusions and actual evidence, and calls `load_skill` with that commit. Explicit-only skills retain their invocation restriction even when required by a pack; unavailable activation leaves coverage incomplete. Packs do not grant execution, delegation, publication or product-change permission.
+`load_pack({uris: ["pack://skillar/iyen/backend-pack", "pack://skillar/iyen/frontend-pack"], commit})` resolves definitions and members at one immutable catalog commit. It checks pack bytes, returns member SKILL.md and manifest digests and invocation policy, and reads no skill bodies. Shared canonical URIs occur once, with every source pack's conditions retained. Conflicting phases or different scope/verifier identities reject composition. The caller selects applicable members, records exclusions and actual evidence, and calls `load_skill` with that commit. Explicit-only skills retain their invocation restriction even when required by a pack; unavailable activation leaves coverage incomplete. Packs do not grant execution, delegation, publication or product-change permission.
 
 ## Integrity, writes and publication
 

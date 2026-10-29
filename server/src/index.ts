@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { existsSync } from "node:fs";
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { lstat, mkdir, mkdtemp, readdir, readFile, realpath, rename, rm, stat, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
@@ -18,8 +19,8 @@ import type { Request, Response } from "express";
 import { z } from "zod";
 import { parse as parseYaml } from "yaml";
 
-const DEFAULT_ROOT = path.join(homedir(), "gisul");
-const ROOT_DIR = path.resolve(process.env.GISUL_ROOT ?? DEFAULT_ROOT);
+const DEFAULT_ROOT = (existsSync(path.join(homedir(), "gisul")) ? path.join(homedir(), "gisul") : path.join(homedir(), "iyen-skills"));
+const ROOT_DIR = path.resolve((process.env.SKILLAR_ROOT ?? process.env.GISUL_ROOT) ?? DEFAULT_ROOT);
 const CURRENT_DIR = path.join(ROOT_DIR, "current");
 const HAS_CURRENT = await lstat(CURRENT_DIR).then(() => true, error => {
   if ((error as NodeJS.ErrnoException).code === "ENOENT") return false;
@@ -27,7 +28,7 @@ const HAS_CURRENT = await lstat(CURRENT_DIR).then(() => true, error => {
 });
 const CONTENT_DIR = HAS_CURRENT ? CURRENT_DIR : ROOT_DIR;
 const DEFAULT_SKILL_ROOTS = [
-  { id: "gisul", dir: path.join(CONTENT_DIR, "skills") },
+  { id: "iyen", dir: path.join(CONTENT_DIR, "skills") },
   ...(HAS_CURRENT ? [] : [
     { id: "codex", dir: path.join(homedir(), ".codex", "skills") },
     { id: "agents", dir: path.join(homedir(), ".agents", "skills") },
@@ -35,21 +36,22 @@ const DEFAULT_SKILL_ROOTS = [
 ];
 const SKILL_ROOTS = configuredSkillRoots();
 const MAX_RESOURCE_BYTES = 16 * 1024 * 1024;
-const SKILL_URI_AUTHORITY = process.env.GISUL_URI_AUTHORITY ?? "gisul";
+const configuredAuthority = process.env.SKILLAR_URI_AUTHORITY ?? process.env.GISUL_URI_AUTHORITY;
+const SKILL_URI_AUTHORITY = configuredAuthority === "gisul" ? "skillar" : configuredAuthority ?? "skillar";
 const SKILLS_EXTENSION_ID = "io.modelcontextprotocol/skills";
 const MAX_SKILL_RESOURCE_COUNT = 512;
 const MAX_SKILL_TOTAL_BYTES = 16 * 1024 * 1024;
 const DEFAULT_HTTP_PORT = 8788;
-const STATE_DIR = path.resolve(process.env.GISUL_STATE_DIR ?? path.join(homedir(), ".config", "gisul-mcp"));
-const TOKEN_REQUESTS_FILE = path.resolve(process.env.GISUL_TOKEN_REQUESTS_FILE ?? path.join(STATE_DIR, "token-requests.json"));
-const TOKENS_FILE = path.resolve(process.env.GISUL_TOKENS_FILE ?? path.join(STATE_DIR, "tokens.json"));
-const ADMIN_TOKEN_FILE = path.resolve(process.env.GISUL_ADMIN_TOKEN_FILE ?? path.join(STATE_DIR, "admin-token"));
-const RELEASE_FILE = path.resolve(process.env.GISUL_RELEASE_FILE ?? path.join(CONTENT_DIR, "release.json"));
-const ALIASES_FILE = path.resolve(process.env.GISUL_ALIASES_FILE ?? path.join(CONTENT_DIR, "aliases.json"));
-const SERVER_VERSION = "0.1.0";
+const STATE_DIR = path.resolve((process.env.SKILLAR_STATE_DIR ?? process.env.GISUL_STATE_DIR) ?? (existsSync(path.join(homedir(), ".config", "gisul-mcp")) ? path.join(homedir(), ".config", "gisul-mcp") : path.join(homedir(), ".config", "skillar-mcp")));
+const TOKEN_REQUESTS_FILE = path.resolve((process.env.SKILLAR_TOKEN_REQUESTS_FILE ?? process.env.GISUL_TOKEN_REQUESTS_FILE) ?? path.join(STATE_DIR, "token-requests.json"));
+const TOKENS_FILE = path.resolve((process.env.SKILLAR_TOKENS_FILE ?? process.env.GISUL_TOKENS_FILE) ?? path.join(STATE_DIR, "tokens.json"));
+const ADMIN_TOKEN_FILE = path.resolve((process.env.SKILLAR_ADMIN_TOKEN_FILE ?? process.env.GISUL_ADMIN_TOKEN_FILE) ?? path.join(STATE_DIR, "admin-token"));
+const RELEASE_FILE = path.resolve((process.env.SKILLAR_RELEASE_FILE ?? process.env.GISUL_RELEASE_FILE) ?? path.join(CONTENT_DIR, "release.json"));
+const ALIASES_FILE = path.resolve((process.env.SKILLAR_ALIASES_FILE ?? process.env.GISUL_ALIASES_FILE) ?? path.join(CONTENT_DIR, "aliases.json"));
+const SERVER_VERSION = "0.2.0";
 
 function configuredSkillRoots(): Array<{ id: string; dir: string }> {
-  const configured = process.env.GISUL_SKILL_ROOTS;
+  const configured = (process.env.SKILLAR_SKILL_ROOTS ?? process.env.GISUL_SKILL_ROOTS);
   if (configured !== undefined) {
     const ids = new Set<string>();
     const roots = configured.split(";").map(value => {
@@ -57,17 +59,17 @@ function configuredSkillRoots(): Array<{ id: string; dir: string }> {
       const id = value.slice(0, separator).trim();
       const dir = value.slice(separator + 1).trim();
       if (separator < 1 || !/^[A-Za-z0-9][A-Za-z0-9_-]*$/.test(id) || !path.isAbsolute(dir) || ids.has(id)) {
-        throw new Error("GISUL_SKILL_ROOTS requires unique URI-safe ids and absolute directories: gisul=/path/skills;codex=/path/codex-skills");
+        throw new Error("SKILLAR_SKILL_ROOTS requires unique URI-safe ids and absolute directories: skillar=/path/skills;codex=/path/codex-skills");
       }
       ids.add(id);
       return { id, dir: path.resolve(dir) };
     });
-    if (process.env.GISUL_SKILLS_DIRS) console.error("GISUL_SKILLS_DIRS is deprecated and ignored because GISUL_SKILL_ROOTS is configured");
+    if ((process.env.SKILLAR_SKILLS_DIRS ?? process.env.GISUL_SKILLS_DIRS)) console.error("SKILLAR_SKILLS_DIRS is deprecated and ignored because SKILLAR_SKILL_ROOTS is configured");
     return roots;
   }
-  if (process.env.GISUL_SKILLS_DIRS) {
-    console.error("GISUL_SKILLS_DIRS is deprecated; use GISUL_SKILL_ROOTS to preserve stable URI source ids");
-    return process.env.GISUL_SKILLS_DIRS.split(path.delimiter).filter(Boolean).map((dir, index) => ({ id: `root${index}`, dir: path.resolve(dir) }));
+  if ((process.env.SKILLAR_SKILLS_DIRS ?? process.env.GISUL_SKILLS_DIRS)) {
+    console.error("SKILLAR_SKILLS_DIRS is deprecated; use SKILLAR_SKILL_ROOTS to preserve stable URI source ids");
+    return (process.env.SKILLAR_SKILLS_DIRS ?? process.env.GISUL_SKILLS_DIRS)!.split(path.delimiter).filter(Boolean).map((dir, index) => ({ id: `root${index}`, dir: path.resolve(dir) }));
   }
   return DEFAULT_SKILL_ROOTS;
 }
@@ -117,13 +119,13 @@ async function readRelease(): Promise<ReleaseRecord | undefined> {
   try { text = await readFile(RELEASE_FILE, "utf8"); }
   catch (error) { if ((error as NodeJS.ErrnoException).code === "ENOENT" && !HAS_CURRENT) return undefined; throw error; }
   const parsed = releaseSchema.safeParse(JSON.parse(text));
-  if (!parsed.success) throw new McpError(ErrorCode.InternalError, "Invalid gisul release metadata");
+  if (!parsed.success) throw new McpError(ErrorCode.InternalError, "Invalid skillar release metadata");
   return { data: parsed.data, fingerprint: createHash("sha256").update(text).digest("hex") };
 }
 
 async function releaseMetadata(before: ReleaseRecord | undefined, entries: SkillEntry[], complete = false): Promise<Record<string, string>> {
   const after = await readRelease();
-  if (before?.fingerprint !== after?.fingerprint) throw new McpError(ErrorCode.InternalError, "Gisul release changed during this request; retry against the current release");
+  if (before?.fingerprint !== after?.fingerprint) throw new McpError(ErrorCode.InternalError, "Skillar release changed during this request; retry against the current release");
   const meta: Record<string, string> = { server_version: SERVER_VERSION };
   if (!before) return meta;
   const manifest = before.data.skills;
@@ -526,14 +528,19 @@ async function buildSkillEntry(source: string, rootDir: string, dirName: string)
 
   const resources: SkillResourceManifest[] = [];
   let totalBytes = 0;
-  for (const relative of await collectSkillRelativeFiles(path.join(rootDir, dirName))) {
-    const bytes = await readFile(path.join(rootDir, dirName, relative));
-    totalBytes += bytes.byteLength;
-    resources.push({
-      uri: skillUri(source, dirName, relative),
-      digest: `sha256:${createHash("sha256").update(bytes).digest("hex")}`,
-      size: bytes.byteLength,
-    });
+  const files = await collectSkillRelativeFiles(path.join(rootDir, dirName));
+  for (let offset = 0; offset < files.length; offset += 16) {
+    const batch = files.slice(offset, offset + 16);
+    const contents = await Promise.all(batch.map((relative) => readFile(path.join(rootDir, dirName, relative))));
+    for (let i = 0; i < batch.length; i += 1) {
+      const bytes = contents[i]!;
+      totalBytes += bytes.byteLength;
+      resources.push({
+        uri: skillUri(source, dirName, batch[i]!),
+        digest: `sha256:${createHash("sha256").update(bytes).digest("hex")}`,
+        size: bytes.byteLength,
+      });
+    }
   }
 
   if (resources.length > MAX_SKILL_RESOURCE_COUNT || totalBytes > MAX_SKILL_TOTAL_BYTES) {
@@ -605,7 +612,7 @@ function parseSkillUriSegments(uri: string): { source: string; pathSegments: str
   } catch {
     return null;
   }
-  if (parsed.protocol !== "skill:" || parsed.host !== SKILL_URI_AUTHORITY || parsed.username || parsed.password || parsed.search || parsed.hash || !parsed.pathname || parsed.pathname === "/") return null;
+  if (parsed.protocol !== "skill:" || !(parsed.host === SKILL_URI_AUTHORITY || (SKILL_URI_AUTHORITY === "skillar" && parsed.host === "gisul" && /^\/(gisul|codex)\//.test(parsed.pathname))) || parsed.username || parsed.password || parsed.search || parsed.hash || !parsed.pathname || parsed.pathname === "/") return null;
 
   let segments: string[];
   try {
@@ -615,7 +622,7 @@ function parseSkillUriSegments(uri: string): { source: string; pathSegments: str
   }
   if (segments.length === 0) return null;
 
-  const source = segments[0];
+  const source = parsed.host === "gisul" && SKILL_URI_AUTHORITY === "skillar" && ["gisul", "codex"].includes(segments[0]) ? "iyen" : segments[0];
   if (!/^[A-Za-z0-9._-]+$/.test(source)) return null;
   for (const segment of segments.slice(1)) {
     if (segment === ".." || segment === "." || segment.includes("/") || segment.includes("\0")) return null;
@@ -635,14 +642,17 @@ function resolveSkillPath(source: string, pathSegments: string[]): { rootDir: st
 }
 
 async function resolveSkillAlias(uri: string): Promise<string> {
+  const parsed = parseSkillUriSegments(uri);
+  const migrated = uri.startsWith("skill://gisul/") && parsed && SKILL_URI_AUTHORITY === "skillar"
+    ? skillUri(parsed.source, ...parsed.pathSegments) : uri;
   let contents: string;
   try { contents = await readFile(ALIASES_FILE, "utf8"); }
-  catch (error) { if ((error as NodeJS.ErrnoException).code === "ENOENT") return uri; throw error; }
+  catch (error) { if ((error as NodeJS.ErrnoException).code === "ENOENT") return migrated; throw error; }
   const aliases = z.record(z.string(), z.string()).parse(JSON.parse(contents));
-  let current = uri;
+  let current = Object.hasOwn(aliases, uri) ? uri : migrated;
   const visited = new Set<string>();
   while (Object.hasOwn(aliases, current)) {
-    if (visited.has(current) || visited.size >= 8) throw new McpError(ErrorCode.InternalError, "Cyclic or excessive gisul URI aliases");
+    if (visited.has(current) || visited.size >= 8) throw new McpError(ErrorCode.InternalError, "Cyclic or excessive skillar URI aliases");
     visited.add(current);
     const next = aliases[current];
     const parsed = parseSkillUriSegments(next);
@@ -733,7 +743,7 @@ function registerSkillsExtension(server: McpServer): void {
   server.server.setRequestHandler(z.object({ method: z.literal("server/discover"), params: z.object({ _meta: z.record(z.string(), z.unknown()) }) }), async () => ({
     resultType: "complete", supportedVersions: [MODERN_VERSION], ...cacheHints,
     capabilities: { resources: {}, tools: {}, extensions: { [SKILLS_EXTENSION_ID]: { directoryRead: true } } },
-    _meta: { "io.modelcontextprotocol/serverInfo": { name: "gisul", version: SERVER_VERSION } },
+    _meta: { "io.modelcontextprotocol/serverInfo": { name: "skillar", version: SERVER_VERSION } },
   }));
   server.server.setRequestHandler(SkillsListRequestSchema, async () => {
     const release = await readRelease();
@@ -777,12 +787,12 @@ function asJsonText(value: unknown) {
   };
 }
 
-function registerGisulTools(server: McpServer): void {
+function registerSkillarTools(server: McpServer): void {
   server.registerTool(
     "skills_list",
     {
       title: "List skills",
-      description: "List SKILL.md packages available from gisul.",
+      description: "List SKILL.md packages available from skillar.",
       inputSchema: {
         query: z.string().optional().describe("Optional case-insensitive substring filter."),
       },
@@ -818,7 +828,7 @@ function registerGisulTools(server: McpServer): void {
       title: "Read skill resource",
       description: "Read a skill resource by skill://<authority>/<source>/<skill>/<path> URI.",
       inputSchema: {
-        uri: z.string().describe("Resource URI, for example skill://gisul/agents/korean-spell-check/SKILL.md."),
+        uri: z.string().describe("Resource URI, for example skill://skillar/agents/korean-spell-check/SKILL.md."),
       },
     },
     async ({ uri }) => {
@@ -842,7 +852,7 @@ function validateSkillMarkdown(markdown: string, name: string): void {
 
 async function withSkillWriteLock<T>(source: string, action: (root: string) => Promise<T>): Promise<T> {
   if (HAS_CURRENT || await readRelease()) {
-    throw new Error("Published releases are immutable. Edit the gisul-skills Git checkout, validate and commit the draft, then promote a new release. Live create/update cannot modify a release.");
+    throw new Error("Published releases are immutable. Edit the iyen-skills Git checkout, validate and commit the draft, then promote a new release. Live create/update cannot modify a release.");
   }
   const configured = SKILL_ROOTS.find(root => root.id === source);
   if (!configured) throw new Error(`Unknown skill source: ${source}`);
@@ -881,7 +891,7 @@ function registerSkillWriteTools(server: McpServer): void {
       const destination = path.join(root, name);
       try { await lstat(destination); throw new Error("Skill directory already exists; load it and use update_skill"); }
       catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
-      const staging = await mkdtemp(path.join(root, ".gisul-create-"));
+      const staging = await mkdtemp(path.join(root, ".skillar-create-"));
       try {
         await writeFile(path.join(staging, "SKILL.md"), markdown, { flag: "wx", mode: 0o600 });
         await rename(staging, destination);
@@ -907,7 +917,7 @@ function registerSkillWriteTools(server: McpServer): void {
       const entry = await buildSkillEntry(parsed.source, root, parsed.pathSegments.slice(0, -1).join("/"));
       if (!entry) throw new Error("Existing skill is not a valid served skill");
       if (entry.resources.reduce((sum, item) => sum + item.size, 0) - previous.length + Buffer.byteLength(markdown) > MAX_SKILL_TOTAL_BYTES) throw new Error("Skill package exceeds the byte limit");
-      const temporary = path.join(path.dirname(target), `.gisul-update-${randomBytes(12).toString("hex")}`);
+      const temporary = path.join(path.dirname(target), `.skillar-update-${randomBytes(12).toString("hex")}`);
       try {
         await writeFile(temporary, markdown, { flag: "wx", mode: (await stat(target)).mode & 0o777 });
         await rename(temporary, target);
@@ -917,10 +927,10 @@ function registerSkillWriteTools(server: McpServer): void {
   });
 }
 
-function createGisulServer(writable = false): McpServer {
+function createSkillarServer(writable = false): McpServer {
   const server = new McpServer(
     {
-      name: "gisul",
+      name: "skillar",
       version: SERVER_VERSION,
     },
     {
@@ -932,21 +942,22 @@ function createGisulServer(writable = false): McpServer {
       },
     },
   );
-  registerGisulTools(server);
+  registerSkillarTools(server);
   if (writable) registerSkillWriteTools(server);
   registerSkillsExtension(server);
   return server;
 }
 
 async function readBearerToken(): Promise<string | undefined> {
-  if (process.env.GISUL_BEARER_TOKEN) return process.env.GISUL_BEARER_TOKEN.trim();
-  if (!process.env.GISUL_BEARER_TOKEN_FILE) return undefined;
-
-  return (await readFile(process.env.GISUL_BEARER_TOKEN_FILE, "utf8")).trim();
+  const token = process.env.SKILLAR_BEARER_TOKEN ?? process.env.GISUL_BEARER_TOKEN;
+  if (token) return token.trim();
+  const file = process.env.SKILLAR_BEARER_TOKEN_FILE ?? process.env.GISUL_BEARER_TOKEN_FILE;
+  return file ? (await readFile(file, "utf8")).trim() : undefined;
 }
 
 async function readAdminToken(bearerToken: string | undefined): Promise<string | undefined> {
-  if (process.env.GISUL_ADMIN_TOKEN) return process.env.GISUL_ADMIN_TOKEN.trim();
+  const token = process.env.SKILLAR_ADMIN_TOKEN ?? process.env.GISUL_ADMIN_TOKEN;
+  if (token) return token.trim();
   try {
     return (await readFile(ADMIN_TOKEN_FILE, "utf8")).trim();
   } catch {
@@ -969,9 +980,9 @@ async function isAuthorized(header: string | undefined, bearerToken: string | un
 function hasAdminCookie(req: Request, adminToken: string | undefined): boolean {
   if (!adminToken) return true;
   const cookies = req.headers.cookie?.split(";").map((value) => value.trim()) ?? [];
-  const cookie = cookies.find((value) => value.startsWith("gisul_admin="));
+  const cookie = cookies.find((value) => (value.startsWith("skillar_admin=") || value.startsWith("gisul_admin=")));
   if (!cookie) return false;
-  return equalSecret(decodeURIComponent(cookie.slice("gisul_admin=".length)), adminToken);
+  return equalSecret(decodeURIComponent(cookie.slice(cookie.indexOf("=") + 1)), adminToken);
 }
 
 function requireAdmin(req: Request, res: Response, adminToken: string | undefined): boolean {
@@ -1009,7 +1020,7 @@ async function createTokenRequest(req: Request, res: Response): Promise<void> {
 
 async function getTokenRequest(req: Request, res: Response): Promise<void> {
   const id = String(req.params.id ?? "");
-  const claimToken = String(req.query.claim_token ?? req.headers["x-gisul-claim-token"] ?? "");
+  const claimToken = String(req.query.claim_token ?? req.headers["x-skillar-claim-token"] ?? req.headers["x-gisul-claim-token"] ?? "");
   const store = await readTokenRequestStore();
   const record = store.requests.find((request) => request.id === id);
 
@@ -1113,7 +1124,7 @@ function page(title: string, body: string): string {
 async function showRequestForm(_req: Request, res: Response): Promise<void> {
   res.type("html").send(
     page(
-      "Request Gisul Token",
+      "Request Skillar Token",
       `<h1>Request Token</h1>
       <form method="post" action="/auth/token-requests">
         <label>Client label<input name="label" placeholder="my laptop, claude desktop, test client"></label>
@@ -1127,8 +1138,8 @@ async function showRequestForm(_req: Request, res: Response): Promise<void> {
 async function showDashboardLogin(_req: Request, res: Response): Promise<void> {
   res.type("html").send(
     page(
-      "Gisul Login",
-      `<h1>Gisul Admin</h1>
+      "Skillar Login",
+      `<h1>Skillar Admin</h1>
       <form method="post" action="/dashboard/login" class="panel">
         <label>Admin token<input name="token" type="password" autocomplete="current-password"></label>
         <button type="submit">Log in</button>
@@ -1146,7 +1157,7 @@ async function handleDashboardLogin(req: Request, res: Response, adminToken: str
 
   res
     .status(303)
-    .set("Set-Cookie", `gisul_admin=${encodeURIComponent(adminToken)}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=86400`)
+    .set("Set-Cookie", `skillar_admin=${encodeURIComponent(adminToken)}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=86400`)
     .set("Location", "/dashboard")
     .end();
 }
@@ -1193,8 +1204,8 @@ async function showDashboard(req: Request, res: Response, adminToken: string | u
 
   res.type("html").send(
     page(
-      "Gisul Dashboard",
-      `<h1>Gisul Dashboard</h1>
+      "Skillar Dashboard",
+      `<h1>Skillar Dashboard</h1>
       <p><a class="button secondary" href="/auth/request">Open request form</a></p>
       <h2>Requests</h2>
       <table>
@@ -1211,7 +1222,7 @@ async function showDashboard(req: Request, res: Response, adminToken: string | u
 }
 
 async function startStdio(): Promise<void> {
-  const server = createGisulServer(true);
+  const server = createSkillarServer(true);
   const transport = new StdioServerTransport();
   await server.connect(new ServerProtocolTransport(transport));
 }
@@ -1221,7 +1232,7 @@ async function startHttp(): Promise<void> {
   const adminToken = await readAdminToken(bearerToken);
   const port = Number(process.env.PORT ?? DEFAULT_HTTP_PORT);
   const host = process.env.HOST ?? "127.0.0.1";
-  const allowedHosts = (process.env.GISUL_ALLOWED_HOSTS ?? "127.0.0.1,localhost")
+  const allowedHosts = ((process.env.SKILLAR_ALLOWED_HOSTS ?? process.env.GISUL_ALLOWED_HOSTS) ?? "127.0.0.1,localhost")
     .split(",")
     .map((value) => value.trim())
     .filter(Boolean);
@@ -1229,7 +1240,7 @@ async function startHttp(): Promise<void> {
   app.use(express.urlencoded({ extended: false }));
 
   app.get("/healthz", (_req: Request, res: Response) => {
-    res.status(200).json({ ok: true, service: "gisul" });
+    res.status(200).json({ ok: true, service: "skillar" });
   });
 
   app.get("/auth/request", showRequestForm);
@@ -1280,7 +1291,7 @@ async function startHttp(): Promise<void> {
       if (!meta || typeof meta[VERSION_KEY] !== "string" || typeof meta[CAPS_KEY] !== "object" || !meta[CAPS_KEY] || Array.isArray(meta[CAPS_KEY])) { fail(-32602, "Required request metadata is missing"); return; }
       const named = ["tools/call", "resources/read", "prompts/get"].includes(parsed.data.method);
       if (req.get("MCP-Protocol-Version") !== meta[VERSION_KEY] || req.get("Mcp-Method") !== parsed.data.method || (named && decodeHeader(req.get("Mcp-Name")) !== (parsed.data.params?.name ?? parsed.data.params?.uri))) { fail(-32020, "Request headers do not match the body"); return; }
-      const server = createGisulServer();
+      const server = createSkillarServer();
       let finish!: () => void;
       const done = new Promise<void>(resolve => { finish = resolve; });
       const transport: Transport = {
@@ -1300,7 +1311,7 @@ async function startHttp(): Promise<void> {
       } finally { await server.close(); }
       return;
     }
-    const server = createGisulServer();
+    const server = createSkillarServer();
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: undefined,
       enableJsonResponse: true,
@@ -1334,7 +1345,7 @@ async function startHttp(): Promise<void> {
       process.exit(1);
     }
     const address = listener.address();
-    console.error(`gisul listening on http://${host}:${typeof address === "object" && address ? address.port : port}/mcp`);
+    console.error(`skillar listening on http://${host}:${typeof address === "object" && address ? address.port : port}/mcp`);
   });
 }
 

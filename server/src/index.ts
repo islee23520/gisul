@@ -36,8 +36,8 @@ const DEFAULT_SKILL_ROOTS = [
 ];
 const SKILL_ROOTS = configuredSkillRoots();
 const MAX_RESOURCE_BYTES = 16 * 1024 * 1024;
-const configuredAuthority = process.env.SKILLAR_URI_AUTHORITY ?? process.env.GISUL_URI_AUTHORITY;
-const SKILL_URI_AUTHORITY = configuredAuthority === "gisul" ? "skillar" : configuredAuthority ?? "skillar";
+const legacyAuthority = process.env.GISUL_URI_AUTHORITY;
+const SKILL_URI_AUTHORITY = process.env.SKILLAR_URI_AUTHORITY ?? (legacyAuthority === "gisul" ? "skillar" : legacyAuthority) ?? "skillar";
 const SKILLS_EXTENSION_ID = "io.modelcontextprotocol/skills";
 const MAX_SKILL_RESOURCE_COUNT = 512;
 const MAX_SKILL_TOTAL_BYTES = 16 * 1024 * 1024;

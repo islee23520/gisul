@@ -205,6 +205,32 @@ describe("initialize", () => {
     assert.ok(result.capabilities?.resources, "resources capability must be declared");
   });
 });
+test("explicit Gisul authority preserves central resource list, get and read", async () => {
+  const child = spawn(process.execPath, [DIST], {
+    env: {
+      ...process.env,
+      SKILLAR_URI_AUTHORITY: "gisul",
+      SKILLAR_SKILL_ROOTS: `central=${fixtureRoots[0]}`,
+      SKILLAR_ROOT: join(fixtureRoots[0], ".runtime"),
+      SKILLAR_STATE_DIR: join(tmpdir(), `skillar-legacy-${Date.now()}`),
+    },
+    stdio: ["pipe", "pipe", "pipe"],
+  });
+  const legacy = new RpcClient(child);
+  try {
+    await legacy.initialize();
+    const uri = "skill://gisul/central/alpha/SKILL.md";
+    const listing = await legacy.call("resources/list", {});
+    assert.ok(listing.resources.some((resource) => resource.uri === uri));
+    const result = await legacy.call("skills/get", { uri });
+    assert.equal(result.skill.uri, uri);
+    const read = await legacy.call("resources/read", { uri });
+    assert.equal(read.contents[0].text, ALPHA_SKILL_MD);
+  } finally {
+    await stopServer(legacy);
+  }
+});
+
 
 describe("skills/list", () => {
   test("returns conforming entries with verbatim frontmatter and complete resource manifests", async () => {

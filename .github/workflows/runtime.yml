@@ -2,10 +2,10 @@ name: Runtime validation
 
 on:
   push:
-    branches: [main, feat/dev-tools-mvp]
-    paths: ['server/**', 'worker/**', 'clients/**', 'plugins/**', '.agents/plugins/**', 'scripts/**', 'Dockerfile', 'compose.yaml', '.dockerignore', '.github/workflows/**']
+    branches: [main, dev, feat/dev-tools-mvp]
+    paths: ['server/**', 'worker/**', 'local/**', 'clients/**', 'plugins/**', '.agents/plugins/**', 'scripts/**', '.github/workflows/**', 'Dockerfile', 'compose.yaml', '.dockerignore']
   pull_request:
-    paths: ['server/**', 'worker/**', 'clients/**', 'plugins/**', '.agents/plugins/**', 'scripts/**', 'Dockerfile', 'compose.yaml', '.dockerignore', '.github/workflows/**']
+    paths: ['server/**', 'worker/**', 'local/**', 'clients/**', 'plugins/**', '.agents/plugins/**', 'scripts/**', '.github/workflows/**', 'Dockerfile', 'compose.yaml', '.dockerignore']
   workflow_dispatch:
 
 permissions:
@@ -24,6 +24,7 @@ jobs:
           cache-dependency-path: |
             server/package-lock.json
             worker/package-lock.json
+            local/package-lock.json
       - run: node scripts/verify.mjs
       - name: Validate Windows deployment scripts
         shell: pwsh

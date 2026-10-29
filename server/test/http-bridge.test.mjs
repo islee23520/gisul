@@ -15,10 +15,10 @@ import { pluginConnection } from '../../clients/codex/install-plugin.mjs';
 import { modernParams, MODERN_VERSION } from "../dist/protocol.js";
 
 test('HTTP configuration rejects insecure endpoints, embedded credentials and ambiguous modes', () => {
-  const args = ['--origin', 'worker', '--http-url', 'https://skills.example/mcp', '--bearer-token-file', '/secrets/gisul'];
+  const args = ['--origin', 'worker', '--http-url', 'https://skills.example/mcp', '--bearer-token-file', '/secrets/skillar'];
   assert.equal(parseUpstreamOptions(args).mode, 'http');
   assert.equal(pluginConnection(args.slice(2)).mode, 'http');
-  assert.equal(parseUpstreamOptions(['--origin', 'macmini', '--', 'ssh', 'macmini', 'gisul']).mode, 'stdio');
+  assert.equal(parseUpstreamOptions(['--origin', 'macmini', '--', 'ssh', 'macmini', 'skillar']).mode, 'stdio');
   assert.equal(pluginConnection(['macmini']).mode, 'stdio');
   for (const url of ['http://skills.example/mcp', 'https://token@skills.example/mcp', 'https://skills.example/mcp?token=secret', 'https://skills.example/mcp#secret']) {
     const bad = args.slice(); bad[3] = url;
@@ -29,12 +29,12 @@ test('HTTP configuration rejects insecure endpoints, embedded credentials and am
 });
 
 test('bridge uses authenticated HTTP, preserves release evidence, and recovers after an upstream restart', { timeout: 30000 }, async t => {
-  const root = await mkdtemp(join(tmpdir(), 'gisul-http-bridge-'));
+  const root = await mkdtemp(join(tmpdir(), 'skillar-http-bridge-'));
   t.after(() => rm(root, { recursive: true, force: true }));
   const dir = join(root, 'skills/example'); await mkdir(dir, { recursive: true });
   const markdown = '---\nname: example\ndescription: HTTP release fixture\n---\nRead guide.md\n';
   const contents = { 'SKILL.md': markdown, 'guide.md': 'Verified supporting content' };
-  const uri = 'skill://gisul/gisul/example/SKILL.md';
+  const uri = 'skill://skillar/iyen/example/SKILL.md';
   const resources = [];
   for (const [name, body] of Object.entries(contents)) {
     await writeFile(join(dir, name), body);
@@ -47,7 +47,7 @@ test('bridge uses authenticated HTTP, preserves release evidence, and recovers a
   const executable = fileURLToPath(new URL('../dist/index.js', import.meta.url));
   let child, port, stderr = '';
   const startOrigin = async () => {
-    child = spawn(process.execPath, [executable, '--http'], { env: { ...process.env, GISUL_ROOT: root, GISUL_SKILL_ROOTS: `gisul=${root}/skills`, GISUL_BEARER_TOKEN: token, GISUL_ADMIN_TOKEN: 'fixture-admin', GISUL_STATE_DIR: join(root, 'state'), HOST: '127.0.0.1', PORT: String(port ?? 0) }, stdio: ['ignore', 'ignore', 'pipe'] });
+    child = spawn(process.execPath, [executable, '--http'], { env: { ...process.env, SKILLAR_ROOT: root, SKILLAR_SKILL_ROOTS: `iyen=${root}/skills`, SKILLAR_BEARER_TOKEN: token, SKILLAR_ADMIN_TOKEN: 'fixture-admin', SKILLAR_STATE_DIR: join(root, 'state'), HOST: '127.0.0.1', PORT: String(port ?? 0) }, stdio: ['ignore', 'ignore', 'pipe'] });
     port = await new Promise((resolve, reject) => {
       const timer = setTimeout(() => reject(new Error('Origin startup timed out')), 5000);
       child.once('error', error => { clearTimeout(timer); reject(error); });
@@ -84,7 +84,7 @@ test('bridge uses authenticated HTTP, preserves release evidence, and recovers a
   const endpoint = `http://127.0.0.1:${proxy.address().port}/mcp`;
   assert.equal((await fetch(endpoint, { method: 'POST' })).status, 401);
   const client = new Client({ name: 'http-bridge-test', version: '1' }); t.after(() => client.close());
-  const transport = new StdioClientTransport({ command: process.execPath, args: [fileURLToPath(new URL('../dist/codex.js', import.meta.url)), '--origin', 'worker-fixture', '--http-url', endpoint, '--bearer-token-file', tokenFile], env: { ...process.env, GISUL_EVENT_LOG_DIR: join(root, 'events') }, stderr: 'pipe' });
+  const transport = new StdioClientTransport({ command: process.execPath, args: [fileURLToPath(new URL('../dist/codex.js', import.meta.url)), '--origin', 'worker-fixture', '--http-url', endpoint, '--bearer-token-file', tokenFile], env: { ...process.env, SKILLAR_EVENT_LOG_DIR: join(root, 'events') }, stderr: 'pipe' });
   transport.stderr.on('data', data => stderr += data);
   try { await client.connect(transport); } catch (error) { throw new Error(`${error}; diagnostic stderr: ${stderr}`); }
   assert.deepEqual((await client.listTools()).tools.map(tool => tool.name).sort(), ['load_skill', 'read_skill_file', 'search_skills']);

@@ -4,13 +4,17 @@ import { canonicalUri } from "./release-reader.ts";
 
 export interface WriteEnv {
   SKILLS_BUCKET: R2Bucket;
+  SKILLAR_GITHUB_TOKEN?: string;
   GISUL_GITHUB_TOKEN?: string;
+  SKILLAR_WRITE_TOKEN?: string;
   GISUL_WRITE_TOKEN?: string;
+  SKILLAR_SKILLS_REPOSITORY?: string;
   GISUL_SKILLS_REPOSITORY?: string;
+  SKILLAR_PUBLISH_WORKFLOW?: string;
   GISUL_PUBLISH_WORKFLOW?: string;
 }
 export function repository(env: WriteEnv): string {
-  const value = env.GISUL_SKILLS_REPOSITORY ?? "changeroa/gisul-skills";
+  const value = (env.SKILLAR_SKILLS_REPOSITORY ?? env.GISUL_SKILLS_REPOSITORY) ?? "changeroa/iyen-skills";
   if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(value)) throw new ReleaseError("Invalid skill repository configuration", 503);
   return value;
 }
@@ -19,7 +23,7 @@ const namePattern = "^[a-z0-9]+(?:-[a-z0-9]+)*$";
 const digestPattern = "^sha256:[a-f0-9]{64}$";
 const textSchema = { type: "string", minLength: 1, maxLength: 512 * 1024 };
 export const writeTools = [
-  { name: "create_skill", description: "Create a skill and optional supporting text files in canonical Git main. Returns accepted, not published; inspect get_skill_write_status and reload after publication. Never overwrites existing skills.", inputSchema: { type: "object", required: ["name", "markdown"], additionalProperties: false, properties: { name: { type: "string", pattern: namePattern, maxLength: 64 }, source: { type: "string", enum: ["gisul"] }, markdown: textSchema, files: { type: "object", maxProperties: 127, additionalProperties: { type: "string" } } } }, annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true } },
+  { name: "create_skill", description: "Create a skill and optional supporting text files in canonical Git main. Returns accepted, not published; inspect get_skill_write_status and reload after publication. Never overwrites existing skills.", inputSchema: { type: "object", required: ["name", "markdown"], additionalProperties: false, properties: { name: { type: "string", pattern: namePattern, maxLength: 64 }, source: { type: "string", enum: ["skillar"] }, markdown: textSchema, files: { type: "object", maxProperties: 127, additionalProperties: { type: "string" } } } }, annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true } },
   { name: "update_skill", description: "Update SKILL.md in canonical Git main using a previously loaded expected_digest. Preserves supporting files. Returns accepted until gated publication completes. Conflicts require reload and reconciliation.", inputSchema: { type: "object", required: ["uri", "markdown", "expected_digest"], additionalProperties: false, properties: { uri: { type: "string" }, markdown: textSchema, expected_digest: { type: "string", pattern: digestPattern } } }, annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: true } },
   { name: "get_skill_write_status", description: "Check a returned Git commit against the active release and publication workflow. Accepted or a successful workflow alone does not mean published.", inputSchema: { type: "object", required: ["commit"], additionalProperties: false, properties: { commit: { type: "string", pattern: "^[a-f0-9]{40}$" } } }, annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true } },
 ];
@@ -31,7 +35,7 @@ export function gitClient(env: WriteEnv): GitCall {
   return async (path, method = "GET", body) => {
     let response: Response;
     try {
-      response = await fetch(`${apiRoot}${path}`, { method, headers: { authorization: `Bearer ${env.GISUL_GITHUB_TOKEN}`, accept: "application/vnd.github+json", "content-type": "application/json", "user-agent": "gisul-worker", "x-github-api-version": "2022-11-28" }, redirect: "manual", signal: AbortSignal.timeout(15_000), ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
+      response = await fetch(`${apiRoot}${path}`, { method, headers: { authorization: `Bearer ${(env.SKILLAR_GITHUB_TOKEN ?? env.GISUL_GITHUB_TOKEN)}`, accept: "application/vnd.github+json", "content-type": "application/json", "user-agent": "skillar-worker", "x-github-api-version": "2022-11-28" }, redirect: "manual", signal: AbortSignal.timeout(15_000), ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
     } catch (error) {
       console.error("GitHub transport failed", { method, path, reason: error instanceof Error ? error.message : "unknown" });
       throw new ReleaseError(`GitHub request outcome is unknown (${method} ${path}); inspect main before retrying a write`, 502);
@@ -58,7 +62,7 @@ export function decodeBlob(blob: { encoding: string; content: string }): string 
 
 export async function skillWrite(env: WriteEnv, tool: string, args: unknown, git: GitCall = gitClient(env)): Promise<Record<string, unknown>> {
   const webRoot = `https://github.com/${repository(env)}`;
-  if (!env.GISUL_GITHUB_TOKEN) throw new ReleaseError("Skill writing is not configured", 503);
+  if (!(env.SKILLAR_GITHUB_TOKEN ?? env.GISUL_GITHUB_TOKEN)) throw new ReleaseError("Skill writing is not configured", 503);
   if (!object(args)) throw new ReleaseError("Tool arguments must be an object", 400);
   if (tool === "get_skill_write_status") {
     assertCommit(args.commit);
@@ -69,7 +73,7 @@ export async function skillWrite(env: WriteEnv, tool: string, args: unknown, git
       const comparison = await git(`/compare/${args.commit}...${identity.commit}`);
       if (comparison.status === "ahead") return { status: "included_in_published_release", commit: args.commit, current_commit: identity.commit, release: identity.release, note: "Reload the skill to verify its current content; later commits may have changed it." };
     }
-    const workflow = env.GISUL_PUBLISH_WORKFLOW ?? "publish-r2.yml";
+    const workflow = (env.SKILLAR_PUBLISH_WORKFLOW ?? env.GISUL_PUBLISH_WORKFLOW) ?? "publish-r2.yml";
     if (!/^[A-Za-z0-9_-]+\.ya?ml$/.test(workflow)) throw new ReleaseError("Invalid publication workflow configuration", 503);
     const runs = await git(`/actions/workflows/${workflow}/runs?head_sha=${args.commit}&per_page=10`);
     const run = runs.workflow_runs?.[0];
@@ -78,11 +82,11 @@ export async function skillWrite(env: WriteEnv, tool: string, args: unknown, git
   if (!["create_skill", "update_skill"].includes(tool)) throw new ReleaseError("Unknown write tool", 400);
   let name: string;
   if (tool === "create_skill") {
-    if (typeof args.name !== "string" || args.name.length > 64 || !new RegExp(namePattern).test(args.name) || (args.source !== undefined && args.source !== "gisul")) throw new ReleaseError("Invalid skill name or source", 400);
+    if (typeof args.name !== "string" || args.name.length > 64 || !new RegExp(namePattern).test(args.name) || (args.source !== undefined && args.source !== "skillar")) throw new ReleaseError("Invalid skill name or source", 400);
     name = args.name;
   } else {
     const uri = canonicalUri(args.uri);
-    const match = /^skill:\/\/gisul\/gisul\/([a-z0-9]+(?:-[a-z0-9]+)*)\/SKILL\.md$/.exec(uri);
+    const match = /^skill:\/\/skillar\/iyen\/([a-z0-9]+(?:-[a-z0-9]+)*)\/SKILL\.md$/.exec(uri);
     if (!match || typeof args.expected_digest !== "string" || !new RegExp(digestPattern).test(args.expected_digest)) throw new ReleaseError("A canonical skill URI and expected_digest are required", 400);
     if (args.files !== undefined) throw new ReleaseError("Update changes SKILL.md only; supporting files are preserved", 400);
     name = match[1];
@@ -126,5 +130,5 @@ export async function skillWrite(env: WriteEnv, tool: string, args: unknown, git
     const actual = (await git("/git/ref/heads/main")).object.sha;
     if (actual !== commit.sha) throw new ReleaseError(`Write not confirmed; inspect commit ${commit.sha} and main before retrying. ${error instanceof ReleaseError ? error.message : "Git update failed"}`, error instanceof ReleaseError ? error.status : 502);
   }
-  return { status: "accepted", commit: commit.sha, uri: `skill://gisul/gisul/${name}/SKILL.md`, digest: await sha256(args.markdown), files: changes.size, url: `${webRoot}/commit/${commit.sha}`, note: "Saved to canonical Git main. Publication runs validation and integrity checks asynchronously; call get_skill_write_status, then load_skill to verify the published bytes." };
+  return { status: "accepted", commit: commit.sha, uri: `skill://skillar/iyen/${name}/SKILL.md`, digest: await sha256(args.markdown), files: changes.size, url: `${webRoot}/commit/${commit.sha}`, note: "Saved to canonical Git main. Publication runs validation and integrity checks asynchronously; call get_skill_write_status, then load_skill to verify the published bytes." };
 }

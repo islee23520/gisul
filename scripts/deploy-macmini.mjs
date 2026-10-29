@@ -25,13 +25,13 @@ const sshArgs = ["-T", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10", host];
 const quote = value => `'${value.replaceAll("'", "'\\''")}'`;
 const remote = command => run("ssh", [...sshArgs, command], { stdio: ["ignore", "pipe", "inherit"] });
 const remoteHome = remote("printf '%s' \"$HOME\"");
-const root = process.env.GISUL_DEPLOY_ROOT ?? `${remoteHome}/gisul`;
-const label = process.env.GISUL_DEPLOY_LABEL ?? "com.iyendev.gisul-mcp";
+const root = (process.env.SKILLAR_DEPLOY_ROOT ?? process.env.GISUL_DEPLOY_ROOT) ?? `${remoteHome}/gisul`;
+const label = (process.env.SKILLAR_DEPLOY_LABEL ?? process.env.GISUL_DEPLOY_LABEL) ?? "com.iyendev.gisul-mcp";
 // rsync's remote-shell path syntax needs a shell-safe, absolute destination.
-if (!/^\/[A-Za-z0-9_./-]+$/.test(root) || !/^[A-Za-z0-9._-]+$/.test(label)) throw new Error("Invalid GISUL_DEPLOY_ROOT or GISUL_DEPLOY_LABEL");
+if (!/^\/[A-Za-z0-9_./-]+$/.test(root) || !/^[A-Za-z0-9._-]+$/.test(label)) throw new Error("Invalid SKILLAR_DEPLOY_ROOT or SKILLAR_DEPLOY_LABEL");
 const id = `${new Date().toISOString().replace(/[^0-9]/g, "")}-${commit.slice(0, 12)}-${randomUUID().slice(0, 8)}`;
 const stage = `${root}/.deploy/stage-${id}`;
-const local = await mkdtemp(join(tmpdir(), "gisul-deploy-"));
+const local = await mkdtemp(join(tmpdir(), "skillar-deploy-"));
 try {
   const payload = join(local, "server");
   // Archive the validated commit so later edits cannot change the staged source.

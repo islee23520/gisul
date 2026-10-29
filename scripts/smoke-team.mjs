@@ -1,13 +1,13 @@
 import assert from "node:assert/strict";
-const origin = process.env.GISUL_PUBLIC_URL;
-assert.ok(origin && new URL(origin).protocol === "https:", "Set GISUL_PUBLIC_URL to the deployed HTTPS origin");
+const origin = process.env.SKILLAR_PUBLIC_URL ?? process.env.GISUL_PUBLIC_URL;
+assert.ok(origin && new URL(origin).protocol === "https:", "Set SKILLAR_PUBLIC_URL to the deployed HTTPS origin");
 async function get(path) {
   const response = await fetch(origin + path, { redirect: "error", signal: AbortSignal.timeout(15000) });
   assert.equal(response.status, 200, `${path} failed (${response.status})`);
   return response.json();
 }
 const health = await get("/healthz");
-if (process.env.GISUL_EXPECTED_COMMIT) assert.equal(health.server_version, process.env.GISUL_EXPECTED_COMMIT);
+if ((process.env.SKILLAR_EXPECTED_COMMIT ?? process.env.GISUL_EXPECTED_COMMIT)) assert.equal(health.server_version, (process.env.SKILLAR_EXPECTED_COMMIT ?? process.env.GISUL_EXPECTED_COMMIT));
 const metadata = await get("/.well-known/oauth-protected-resource/mcp");
 assert.equal(metadata.resource, origin + "/mcp");
 assert.deepEqual(metadata.authorization_servers, [origin]);

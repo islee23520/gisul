@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "https://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.example.skillar-mcp</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/YOUR_USER/.local/bin/skillar</string>
+    <string>--http</string>
+  </array>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    <key>HOST</key>
+    <string>127.0.0.1</string>
+    <key>PORT</key>
+    <string>8788</string>
+    <key>SKILLAR_BEARER_TOKEN_FILE</key>
+    <string>/Users/YOUR_USER/.config/secrets/skillar-mcp-bearer-token</string>
+    <key>SKILLAR_ADMIN_TOKEN_FILE</key>
+    <string>/Users/YOUR_USER/.config/secrets/skillar-mcp-admin-token</string>
+    <key>SKILLAR_ALLOWED_HOSTS</key>
+    <string>127.0.0.1,localhost,skillar-origin.example.com</string>
+  </dict>
+
+  <key>WorkingDirectory</key>
+  <string>/Users/YOUR_USER/skillar/server</string>
+
+  <key>RunAtLoad</key>
+  <true/>
+
+  <key>KeepAlive</key>
+  <true/>
+
+  <key>StandardOutPath</key>
+  <string>/Users/YOUR_USER/Library/Logs/skillar-mcp.out.log</string>
+
+  <key>StandardErrorPath</key>
+  <string>/Users/YOUR_USER/Library/Logs/skillar-mcp.err.log</string>
+</dict>
+</plist>

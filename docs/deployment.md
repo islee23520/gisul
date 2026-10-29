@@ -1,10 +1,12 @@
 # Deployment
 
+> The former personal Cloudflare deployment was retired on 2026-10-29. Addresses and resource names below describe that historical installation, not an active endpoint. The current personal installation uses the local `skillar` npm package. Do not recreate the old Worker as part of the rename; configure your own deployment explicitly if you need the hosted runtime.
+
 For a self-hosted team OAuth Worker, see [team plugin setup](team-plugin.md). `worker/src/team.ts` serves native MCP tools and OAuth directly from Cloudflare. The Mac mini instructions below cover the personal deployment.
 
 ## Worker and private R2
 
-The Worker in this checkout serves `/mcp` directly from `SKILLS_BUCKET`. It has no origin URL, tunnel, SSH connection, or filesystem dependency. `GISUL_BEARER_TOKEN` authenticates MCP readers; `GISUL_WRITE_TOKEN` authenticates read/write clients and `GISUL_GITHUB_TOKEN` lets the Worker commit only through its fixed skill-content API; `GISUL_PUBLISH_TOKEN` authenticates publication. These secrets are separate from the Cloudflare account credentials used by Wrangler. Keep the bucket's public access disabled.
+The Worker in this checkout serves `/mcp` directly from `SKILLS_BUCKET`. It has no origin URL, tunnel, SSH connection, or filesystem dependency. `SKILLAR_BEARER_TOKEN` authenticates MCP readers; `SKILLAR_WRITE_TOKEN` authenticates read/write clients and `SKILLAR_GITHUB_TOKEN` lets the Worker commit only through its fixed skill-content API; `SKILLAR_PUBLISH_TOKEN` authenticates publication. These secrets are separate from the Cloudflare account credentials used by Wrangler. Keep the bucket's public access disabled.
 
 The production machine endpoint is `https://gisul-mcp.changeroa.workers.dev/mcp`; the publication origin is the same URL without `/mcp`. Its stable workers.dev route is enabled on the existing Worker, with bearer authentication enforced by the Worker. The custom domain `gisul.iyendev.com` also routes to this version, but its zone can return a browser challenge to unattended clients. GitHub Actions and the installed plugin use the stable workers.dev endpoint. Do not depend on a preview alias for ongoing publication or disable security across unrelated zone traffic.
 
@@ -16,7 +18,7 @@ Its scheduled workflow is opt-in and does not activate or publish releases.
 
 ### Current protocol and client
 
-The direct Worker supports MCP `2026-07-28` with `server/discover`, per-request protocol/capability metadata, matching HTTP headers, and private 30-second cache hints. HTTP responses remain `no-store`; the bridge owns its credential-isolated memory cache and verifies resource digests even on cache hits. Legacy initialization remains available for existing publishers and clients. Browser origins must match the endpoint origin or an explicit comma-separated `GISUL_ALLOWED_ORIGINS` value.
+The direct Worker supports MCP `2026-07-28` with `server/discover`, per-request protocol/capability metadata, matching HTTP headers, and private 30-second cache hints. HTTP responses remain `no-store`; the bridge owns its credential-isolated memory cache and verifies resource digests even on cache hits. Legacy initialization remains available for existing publishers and clients. Browser origins must match the endpoint origin or an explicit comma-separated `SKILLAR_ALLOWED_ORIGINS` value.
 
 Install the production client over HTTPS:
 
@@ -24,7 +26,7 @@ Install the production client over HTTPS:
 node clients/codex/install.mjs --plugin --http-url https://gisul-mcp.changeroa.workers.dev/mcp --bearer-token-file "$HOME/.config/gisul-worker-dev-tools/mcp-bearer"
 ```
 
-Reader credentials expose search, load and verified file reads. A write credential additionally exposes create_skill, update_skill and get_skill_write_status. Content changes go through `changeroa/gisul-skills` main and its gated `publish-r2.yml` GitHub Actions workflow on Ubuntu. Neither serving nor publishing requires the Mac mini. The Mac mini is only used as an authenticated Wrangler deployment workstation. Its old Node service is retained separately for rollback and is not in the production request path.
+Reader credentials expose search, load and verified file reads. A write credential additionally exposes create_skill, update_skill and get_skill_write_status. Content changes go through `changeroa/iyen-skills` main and its gated `publish-r2.yml` GitHub Actions workflow on Ubuntu. Neither serving nor publishing requires the Mac mini. The Mac mini is only used as an authenticated Wrangler deployment workstation. Its old Node service is retained separately for rollback and is not in the production request path.
 
 ### Release contract
 
@@ -47,7 +49,7 @@ The pointer records a revision, the latest operation's sequence, and the highest
 
 The GitHub Actions publisher must use one fixed production concurrency group with `cancel-in-progress: false`, retain the existing validation/evaluation gates, and check the current high-water commit is an ancestor of the candidate on main before promotion. Use a sequence from that fixed workflow and do not reset it. R2's ETag check is the final concurrency guard; the authenticated publisher is responsible for establishing Git ancestry and successful evaluation. No real-content publication is authorized by a local fixture pass alone.
 
-`skills/get` returns the selected release and commit. The bridge sends `params._meta["io.gisul/commit"]` on subsequent body and directory reads. Those requests use the completed immutable prefix; discovery and new loads read the latest pointer. Retain completed releases while existing connections may use them. Search evidence, load evidence, and file-read evidence carry release/commit for the trace exporter.
+`skills/get` returns the selected release and commit. The bridge sends `params._meta["app.skillar/commit"]` on subsequent body and directory reads. Those requests use the completed immutable prefix; discovery and new loads read the latest pointer. Retain completed releases while existing connections may use them. Search evidence, load evidence, and file-read evidence carry release/commit for the trace exporter.
 
 ### Initial activation
 
@@ -64,7 +66,7 @@ cd worker
 npx wrangler versions upload --dry-run
 ```
 
-For migration, upload a candidate Worker version with `--var GISUL_SERVER_VERSION:<full source commit>` and use its preview URL to validate authentication and publish the first gated release. Keep production traffic on the existing version until the actual plugin can search, load, and read verified files from the candidate and release/commit is present in Langfuse. The pre-migration version read the Mac origin; the current production version reads R2 directly. Candidate and future production versions share the R2 bucket and pointer; preview promotion is not an isolated test environment after cutover. Then activate the tested version and record its source commit, Cloudflare version ID, content commit, inventory digest, and permanent checkout paths. [Worker versions and deployments](https://developers.cloudflare.com/workers/versions-and-deployments/) separate uploading a candidate from activating it.
+For migration, upload a candidate Worker version with `--var SKILLAR_SERVER_VERSION:<full source commit>` and use its preview URL to validate authentication and publish the first gated release. Keep production traffic on the existing version until the actual plugin can search, load, and read verified files from the candidate and release/commit is present in Langfuse. The pre-migration version read the Mac origin; the current production version reads R2 directly. Candidate and future production versions share the R2 bucket and pointer; preview promotion is not an isolated test environment after cutover. Then activate the tested version and record its source commit, Cloudflare version ID, content commit, inventory digest, and permanent checkout paths. [Worker versions and deployments](https://developers.cloudflare.com/workers/versions-and-deployments/) separate uploading a candidate from activating it.
 
 ## Mac mini server
 
@@ -76,8 +78,8 @@ scripts/deploy-macmini.sh macmini
 
 The host is an SSH alias with BatchMode access. The defaults are the remote user's
 `~/gisul` and launchd label `com.iyendev.gisul-mcp`; override them with
-`GISUL_DEPLOY_ROOT` and `GISUL_DEPLOY_LABEL`. The target must already have the HTTP
-LaunchAgent, its secret files, and the `gisul` executable configured. The script
+`SKILLAR_DEPLOY_ROOT` and `SKILLAR_DEPLOY_LABEL`. The target must already have the HTTP
+LaunchAgent, its secret files, and the `skillar` executable configured. The script
 checks that launchd's working directory matches the target before changing it.
 
 The script runs `npm ci`, build, and the complete server test suite locally. It
@@ -127,7 +129,7 @@ Plugin installation is a separate step; see [the Codex client](../clients/codex/
 
 ## Authenticated HTTP skill writes
 
-Set distinct `GISUL_WRITE_TOKEN` and `GISUL_GITHUB_TOKEN` Worker secrets. Keep the reader and publication secrets separate. Prefer a repository-scoped GitHub credential for `changeroa/gisul-skills` with Contents write and Actions read. Configure a writing client with a private token file containing the write token; never embed it in URLs or tracked config.
+Set distinct `SKILLAR_WRITE_TOKEN` and `SKILLAR_GITHUB_TOKEN` Worker secrets. Keep the reader and publication secrets separate. Prefer a repository-scoped GitHub credential for `changeroa/iyen-skills` with Contents write and Actions read. Configure a writing client with a private token file containing the write token; never embed it in URLs or tracked config.
 
 Writes are limited to `skills/<name>/SKILL.md` and, on creation, supporting text files inside that skill. They cannot change workflows or publication policy. All files are committed together to main using a non-forced reference update. Duplicate creation and stale SHA256 edits fail without overwriting. Existing resources are preserved on update. A lost ref-update response triggers one readback, never an automatic second write.
 

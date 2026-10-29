@@ -6,13 +6,13 @@ The command uses the runtime's inventory parser and the modern MCP protocol.
 
 | Configuration | Required value |
 | --- | --- |
-| `GISUL_CANARY_MCP_URL` | Deployed HTTPS `/mcp` endpoint |
-| `GISUL_CANARY_READER_TOKEN` | Reader credential accepted by that endpoint |
-| `GISUL_CANARY_EXPECTED_RUNTIME` | Full verified source commit reported by the deployed runtime |
-| `GISUL_CANARY_INVENTORY_URL` | Independently retained expected `inventory.json`, not a current-pointer lookup |
-| `GISUL_CANARY_INVENTORY_SHA256` | `sha256:` digest of the exact expected inventory bytes |
-| `GISUL_CANARY_INVENTORY_TOKEN` | Optional separate read credential for a protected expected snapshot |
-| `GISUL_CANARY_RECEIPT` | Optional output path; defaults to checkout `dist/receipts/production-canary.json` |
+| `SKILLAR_CANARY_MCP_URL` | Deployed HTTPS `/mcp` endpoint |
+| `SKILLAR_CANARY_READER_TOKEN` | Reader credential accepted by that endpoint |
+| `SKILLAR_CANARY_EXPECTED_RUNTIME` | Full verified source commit reported by the deployed runtime |
+| `SKILLAR_CANARY_INVENTORY_URL` | Independently retained expected `inventory.json`, not a current-pointer lookup |
+| `SKILLAR_CANARY_INVENTORY_SHA256` | `sha256:` digest of the exact expected inventory bytes |
+| `SKILLAR_CANARY_INVENTORY_TOKEN` | Optional separate read credential for a protected expected snapshot |
+| `SKILLAR_CANARY_RECEIPT` | Optional output path; defaults to checkout `dist/receipts/production-canary.json` |
 
 Only loopback HTTP is accepted for local fixture verification. URLs cannot
 contain credentials, query or fragment, and redirects are refused. The MCP
@@ -40,7 +40,7 @@ not an OAuth member login, model quality or publication authorization.
 ## GitHub Actions
 
 Configure matching repository variables/secrets for the names above. Scheduled
-runs are opt-in through variable `GISUL_CANARY_ENABLED=true`; manual dispatch
+runs are opt-in through variable `SKILLAR_CANARY_ENABLED=true`; manual dispatch
 also runs the check. Both retain receipts even when preflight fails. The job
 has only `contents: read`, no publication credential and no activation step.
 It uses GitHub Actions failure notifications; no Slack/webhook is configured.

@@ -5,8 +5,8 @@ import { fileURLToPath } from "node:url";
 import { build } from "esbuild";
 import { Miniflare } from "miniflare";
 
-const origin = "https://gisul.example";
-const uri = "skill://gisul/gisul/example/SKILL.md";
+const origin = "https://skillar.example";
+const uri = "skill://skillar/iyen/example/SKILL.md";
 const hash = body => `sha256:${createHash("sha256").update(body).digest("hex")}`;
 const bundle = build({ entryPoints: [fileURLToPath(new URL("../src/index.ts", import.meta.url))], bundle: true, write: false, format: "esm", platform: "browser", target: "es2022", external: ["cloudflare:workers"] });
 
@@ -27,7 +27,7 @@ async function release(bucket, letter, registration, manual = false) {
 
 async function fixture(t, overrides = {}) {
   const state = { member: true, unavailable: false, revoked: false, identity: 42, repositoryForbidden: false, githubToken: "github-user-token", tokenExpiry: 28800, refreshes: 0, writes: [], calls: [] };
-  const env = Object.fromEntries(Object.entries({ GISUL_PUBLIC_URL: origin, GISUL_GITHUB_USER_IDS: "42", GITHUB_CLIENT_ID: "github-client", GITHUB_CLIENT_SECRET: "github-secret", GISUL_SKILLS_REPOSITORY: "example-org/gisul-skills", GISUL_PUBLISH_WORKFLOW: "publish.yml", GISUL_BEARER_TOKEN: "legacy-reader", GISUL_WRITE_TOKEN: "legacy-writer", GISUL_GITHUB_TOKEN: "machine-github-token", GISUL_PUBLISH_TOKEN: "publisher", GISUL_SERVER_VERSION: "team-fixture", ...overrides }).map(([name, value]) => [name, { type: "text", value }]));
+  const env = Object.fromEntries(Object.entries({ SKILLAR_PUBLIC_URL: origin, SKILLAR_GITHUB_USER_IDS: "42", GITHUB_CLIENT_ID: "github-client", GITHUB_CLIENT_SECRET: "github-secret", SKILLAR_SKILLS_REPOSITORY: "example-org/iyen-skills", SKILLAR_PUBLISH_WORKFLOW: "publish.yml", SKILLAR_BEARER_TOKEN: "legacy-reader", SKILLAR_WRITE_TOKEN: "legacy-writer", SKILLAR_GITHUB_TOKEN: "machine-github-token", SKILLAR_PUBLISH_TOKEN: "publisher", SKILLAR_SERVER_VERSION: "team-fixture", ...overrides }).map(([name, value]) => [name, { type: "text", value }]));
   const runtime = new Miniflare({ telemetry: { enabled: false }, logRequests: false, workers: [{ config: { type: "worker", name: "team", compatibilityDate: "2026-09-03", compatibilityFlags: ["global_fetch_strictly_public"], manifest: { mainModule: "index.js", modules: { "index.js": { type: "esm", contents: (await bundle).outputFiles[0].text } } }, env: { ...env, SKILLS_BUCKET: { type: "r2", name: "skills" }, OAUTH_KV: { type: "kv", id: "oauth" } }, exports: {} }, dev: { outboundService: { type: "fetcher", handler: async request => {
     const url = new URL(request.url); state.calls.push({ host: url.host, path: url.pathname });
     if (url.href === "https://github.com/login/oauth/access_token") {
@@ -130,7 +130,7 @@ test("member login enables direct search/load/read and pins files across later r
   const directory = await f.tool(token.access_token, "read_skill_file", { skill_uri: uri, uri: uri.replace("/SKILL.md", "/references"), load_id: loaded.load_id });
   assert.equal(directory.resources.length, 1);
   const empty = await f.tool(token.access_token, "search_skills", { query: "absent" }); assert.equal(empty.totalMatches, 0);
-  const outside = await (await f.rpc(token.access_token, "tools/call", { name: "read_skill_file", arguments: { skill_uri: uri, uri: "skill://gisul/gisul/other/SKILL.md", load_id: loaded.load_id } })).json();
+  const outside = await (await f.rpc(token.access_token, "tools/call", { name: "read_skill_file", arguments: { skill_uri: uri, uri: "skill://skillar/iyen/other/SKILL.md", load_id: loaded.load_id } })).json();
   assert.equal(outside.result.isError, true);
   assert.equal((await f.fetch(`/callback?state=${token.flow.state}&code=replay`, { headers: { cookie: token.flow.cookie } })).status, 400);
 });
@@ -271,7 +271,7 @@ test("numeric account allowlist rejects other accounts and identity changes on r
   f.state.identity = 42;
   const grant = await f.login(); f.state.identity = 99;
   assert.equal((await f.rpc(grant.access_token, "tools/list")).status, 401);
-  const fresh = await fixture(t, { GISUL_GITHUB_USER_IDS: "" });
+  const fresh = await fixture(t, { SKILLAR_GITHUB_USER_IDS: "" });
   assert.equal((await fresh.fetch("/.well-known/oauth-authorization-server")).status, 503);
 });
 
@@ -286,7 +286,7 @@ test("write scopes and plain PKCE are rejected before GitHub login", async t => 
 });
 
 test("unset OAuth preserves original token-only entrypoint", async t => {
-  const f = await fixture(t, { GISUL_PUBLIC_URL: "" });
+  const f = await fixture(t, { SKILLAR_PUBLIC_URL: "" });
   assert.equal((await f.rpc("legacy-reader", "skills/list")).status, 200);
   assert.equal((await f.fetch("/.well-known/oauth-authorization-server")).status, 404);
 });

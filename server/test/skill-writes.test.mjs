@@ -13,16 +13,16 @@ const markdown = (name, body = "Original") => `---\nname: ${name}\ndescription: 
 const data = result => { assert.ok(!result.isError, JSON.stringify(result)); return JSON.parse(result.content[0].text); };
 async function connect(root) {
   const client = new Client({ name: "write-test", version: "1" });
-  await client.connect(new StdioClientTransport({ command: process.execPath, args: [server], env: { ...process.env, GISUL_ROOT: root, GISUL_SKILLS_DIRS: root } }));
+  await client.connect(new StdioClientTransport({ command: process.execPath, args: [server], env: { ...process.env, SKILLAR_ROOT: root, SKILLAR_SKILLS_DIRS: root } }));
   return client;
 }
 test("writes round-trip, preserve supporting files and reject duplicates, stale edits and unsafe paths", async () => {
-  const root = await mkdtemp(join(tmpdir(), "gisul-writes-"));
+  const root = await mkdtemp(join(tmpdir(), "skillar-writes-"));
   const client = await connect(root);
   const call = (name, args) => client.callTool({ name, arguments: args });
   try {
     const created = data(await call("create_skill", { name: "flow", markdown: markdown("flow") }));
-    assert.equal(created.uri, "skill://gisul/root0/flow/SKILL.md");
+    assert.equal(created.uri, "skill://skillar/root0/flow/SKILL.md");
     assert.equal((await client.readResource({ uri: created.uri })).contents[0].text, markdown("flow"));
     assert.equal((await call("create_skill", { name: "flow", markdown: markdown("flow", "Overwritten") })).isError, true);
     assert.equal((await call("create_skill", { name: "other", markdown: markdown("wrong") })).isError, true);
@@ -34,19 +34,19 @@ test("writes round-trip, preserve supporting files and reject duplicates, stale 
     assert.notEqual(updated.digest, created.digest);
     assert.equal(await readFile(join(root, "flow/guide.md"), "utf8"), "Keep me");
     assert.equal((await call("update_skill", { uri: created.uri, expected_digest: created.digest, markdown: markdown("flow") })).isError, true);
-    for (const uri of [created.uri.replace("gisul/", "foreign/"), "skill://gisul/root0/%2e%2e/flow/SKILL.md", created.uri + "?x=1"]) {
+    for (const uri of [created.uri.replace("skillar/", "foreign/"), "skill://skillar/root0/%2e%2e/flow/SKILL.md", created.uri + "?x=1"]) {
       assert.equal((await call("update_skill", { uri, expected_digest: updated.digest, markdown: changed })).isError, true);
     }
     await symlink(join(root, "flow"), join(root, "alias"));
-    assert.equal((await call("update_skill", { uri: "skill://gisul/root0/alias/SKILL.md", expected_digest: updated.digest, markdown: markdown("alias") })).isError, true);
+    assert.equal((await call("update_skill", { uri: "skill://skillar/root0/alias/SKILL.md", expected_digest: updated.digest, markdown: markdown("alias") })).isError, true);
     await mkdir(join(root, "file-link"));
     await symlink(join(root, "flow/SKILL.md"), join(root, "file-link/SKILL.md"));
-    assert.equal((await call("update_skill", { uri: "skill://gisul/root0/file-link/SKILL.md", expected_digest: updated.digest, markdown: markdown("file-link") })).isError, true);
+    assert.equal((await call("update_skill", { uri: "skill://skillar/root0/file-link/SKILL.md", expected_digest: updated.digest, markdown: markdown("file-link") })).isError, true);
     assert.equal(await readFile(join(root, "flow/SKILL.md"), "utf8"), changed);
   } finally { await client.close(); await rm(root, { recursive: true, force: true }); }
 });
 test("independent server processes cannot both overwrite the same version", async () => {
-  const root = await mkdtemp(join(tmpdir(), "gisul-race-"));
+  const root = await mkdtemp(join(tmpdir(), "skillar-race-"));
   const clients = await Promise.all([connect(root), connect(root)]);
   try {
     const created = data(await clients[0].callTool({ name: "create_skill", arguments: { name: "flow", markdown: markdown("flow") } }));
@@ -59,8 +59,8 @@ test("independent server processes cannot both overwrite the same version", asyn
   } finally { await Promise.all(clients.map(client => client.close())); await rm(root, { recursive: true, force: true }); }
 });
 test("authenticated public HTTP remains read-only", { timeout: 15000 }, async () => {
-  const root = await mkdtemp(join(tmpdir(), "gisul-http-write-"));
-  const child = spawn(process.execPath, [server, "--http"], { env: { ...process.env, PORT: "0", HOST: "127.0.0.1", GISUL_ROOT: root, GISUL_STATE_DIR: join(root, "state"), GISUL_SKILLS_DIRS: root, GISUL_BEARER_TOKEN: "fixture-read-token", GISUL_ADMIN_TOKEN: "fixture-admin-token" }, stdio: ["ignore", "ignore", "pipe"] });
+  const root = await mkdtemp(join(tmpdir(), "skillar-http-write-"));
+  const child = spawn(process.execPath, [server, "--http"], { env: { ...process.env, PORT: "0", HOST: "127.0.0.1", SKILLAR_ROOT: root, SKILLAR_STATE_DIR: join(root, "state"), SKILLAR_SKILLS_DIRS: root, SKILLAR_BEARER_TOKEN: "fixture-read-token", SKILLAR_ADMIN_TOKEN: "fixture-admin-token" }, stdio: ["ignore", "ignore", "pipe"] });
   const client = new Client({ name: "http-test", version: "1" });
   try {
     const url = await new Promise((resolve, reject) => {

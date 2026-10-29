@@ -22,10 +22,10 @@ export function canonicalUri(uri: unknown): string {
   if (typeof uri !== "string" || /%2e|%2f|%5c|%00/i.test(uri) || uri.includes("\\")) throw new ReleaseError("Invalid skill URI", 400);
   let url: URL;
   try { url = new URL(uri); } catch { throw new ReleaseError("Invalid skill URI", 400); }
-  if (url.protocol !== "skill:" || url.host !== "gisul" || url.username || url.password || url.search || url.hash) throw new ReleaseError("Invalid skill URI", 400);
+  if (url.protocol !== "skill:" || !(url.host === "skillar" || (url.host === "gisul" && /^\/(gisul|codex)\//.test(url.pathname))) || url.username || url.password || url.search || url.hash) throw new ReleaseError("Invalid skill URI", 400);
   let segments: string[];
   try { segments = url.pathname.slice(1).split("/").map(decodeURIComponent); } catch { throw new ReleaseError("Invalid skill URI", 400); }
-  if (segments.length < 2 || segments.some(part => !part || part === "." || part === ".." || /[\\/\x00-\x1f\x7f]/.test(part)) || `skill://gisul/${segments.map(encodeURIComponent).join("/")}` !== uri) throw new ReleaseError("Noncanonical skill URI", 400);
+  if (segments.length < 2 || segments.some(part => !part || part === "." || part === ".." || /[\\/\x00-\x1f\x7f]/.test(part)) || `skill://${url.host}/${segments.map(encodeURIComponent).join("/")}` !== uri) throw new ReleaseError("Noncanonical skill URI", 400);
   return uri;
 }
 
@@ -89,10 +89,10 @@ export function parseInventory(text: string, identity: ReleaseIdentity): Snapsho
     if (!Array.isArray(inventory.packs) || inventory.packs.length > 256) throw new ReleaseError("Invalid pack inventory");
     const names = new Set<string>();
     for (const pack of inventory.packs) {
-      const definition = validatePack(pack.definition, skills);
+      const definition = validatePack(pack.definition, skills, true);
       assertDigest(pack);
       const file = inventory.files.find(f => f.path === `packs/${definition.name}.json`);
-      if (pack.uri !== packUri(definition.name) || names.has(pack.uri) || !file || file.uri !== undefined || file.digest !== pack.digest || file.size !== pack.size) throw new ReleaseError("Pack differs from release inventory");
+      if (![packUri(definition.name), `pack://gisul/gisul/${definition.name}`].includes(pack.uri) || names.has(pack.uri) || !file || file.uri !== undefined || file.digest !== pack.digest || file.size !== pack.size) throw new ReleaseError("Pack differs from release inventory");
       names.add(pack.uri);
       if (pack.registration !== undefined) validateRegistration(pack.registration);
     }

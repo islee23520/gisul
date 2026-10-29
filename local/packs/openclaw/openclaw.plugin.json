@@ -1,0 +1,22 @@
+{
+  "id": "skillar",
+  "name": "skillar",
+  "description": "Capture OpenClaw prompts for the local skillar skill router.",
+  "activation": {
+    "onStartup": true
+  },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false
+  },
+  "mcpServers": {
+    "skillar": {
+      "transport": "stdio",
+      "command": "__COMMAND__",
+      "args": "__ARGS__",
+      "env": {
+        "SKILLAR_HOME": "__SKILLAR_HOME__"
+      }
+    }
+  }
+}

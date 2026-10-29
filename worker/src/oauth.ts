@@ -7,8 +7,10 @@ import { sha256 } from "./r2-objects.ts";
 export interface OAuthEnv extends DirectEnv {
   OAUTH_KV: KVNamespace;
   OAUTH_PROVIDER: OAuthHelpers;
-  GISUL_PUBLIC_URL: string;
-  GISUL_GITHUB_USER_IDS: string;
+  SKILLAR_PUBLIC_URL: string;
+  GISUL_PUBLIC_URL?: string;
+  SKILLAR_GITHUB_USER_IDS: string;
+  GISUL_GITHUB_USER_IDS?: string;
   GITHUB_CLIENT_ID: string;
   GITHUB_CLIENT_SECRET: string;
 }
@@ -21,14 +23,14 @@ const cookieName = (state: string) => `__Host-gisul-${state.slice(0, 12)}`;
 const cookie = (state: string, value: string, maxAge: number) => `${cookieName(state)}=${value}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=${maxAge}`;
 
 function page(title: string, body: string, status = 200, headers: HeadersInit = {}, formAction = "'self'"): Response {
-  return new Response(`<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escape(title)} · Gisul</title><style>body{font:17px/1.6 system-ui,sans-serif;margin:64px auto;padding:0 24px;max-width:540px;color:#202329;background:#fafaf8}h1{font-size:28px}small{color:#555}button,a.button{font:inherit;display:inline-block;border:0;border-radius:8px;background:#175b48;color:white;padding:12px 20px;cursor:pointer;text-decoration:none}button.secondary{background:#e6e8e5;color:#202329;margin-left:8px}button:focus-visible,a:focus-visible{outline:3px solid #2461bb;outline-offset:4px}code{overflow-wrap:anywhere}</style><main><small>IYEN · Gisul</small><h1>${escape(title)}</h1>${body}</main></html>`, { status, headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store", "content-security-policy": `default-src 'none'; style-src 'unsafe-inline'; form-action ${formAction}; frame-ancestors 'none'; base-uri 'none'`, "referrer-policy": "strict-origin", "x-content-type-options": "nosniff", ...headers } });
+  return new Response(`<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escape(title)} · Skillar</title><style>body{font:17px/1.6 system-ui,sans-serif;margin:64px auto;padding:0 24px;max-width:540px;color:#202329;background:#fafaf8}h1{font-size:28px}small{color:#555}button,a.button{font:inherit;display:inline-block;border:0;border-radius:8px;background:#175b48;color:white;padding:12px 20px;cursor:pointer;text-decoration:none}button.secondary{background:#e6e8e5;color:#202329;margin-left:8px}button:focus-visible,a:focus-visible{outline:3px solid #2461bb;outline-offset:4px}code{overflow-wrap:anywhere}</style><main><small>IYEN · Skillar</small><h1>${escape(title)}</h1>${body}</main></html>`, { status, headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store", "content-security-policy": `default-src 'none'; style-src 'unsafe-inline'; form-action ${formAction}; frame-ancestors 'none'; base-uri 'none'`, "referrer-policy": "strict-origin", "x-content-type-options": "nosniff", ...headers } });
 }
 
 async function github(path: string, token: string): Promise<Record<string, any>> {
   let response: Response;
-  try { response = await fetch(`https://api.github.com${path}`, { headers: { authorization: `Bearer ${token}`, accept: "application/vnd.github+json", "user-agent": "iyen-gisul", "x-github-api-version": "2022-11-28" }, redirect: "manual", signal: AbortSignal.timeout(10_000) }); }
+  try { response = await fetch(`https://api.github.com${path}`, { headers: { authorization: `Bearer ${token}`, accept: "application/vnd.github+json", "user-agent": "iyen-skillar", "x-github-api-version": "2022-11-28" }, redirect: "manual", signal: AbortSignal.timeout(10_000) }); }
   catch { throw new AuthFailure(503, "GitHub 연결을 확인할 수 없습니다. 잠시 후 다시 시도해 주세요."); }
-  if (response.status === 401) throw new AuthFailure(401, "GitHub 연결이 만료되거나 해제되었습니다. OpenClaw에서 Gisul에 다시 로그인해 주세요.");
+  if (response.status === 401) throw new AuthFailure(401, "GitHub 연결이 만료되거나 해제되었습니다. OpenClaw에서 Skillar에 다시 로그인해 주세요.");
   if (response.status === 404) throw new AuthFailure(403, "GitHub 계정을 확인할 수 없습니다. 다시 로그인해 주세요.");
   if (response.status === 403) throw new AuthFailure(503, "GitHub에서 계정 확인을 허용하지 않았습니다. 잠시 후 다시 시도해 주세요.");
   if (!response.ok) throw new AuthFailure(503, "GitHub 응답을 확인할 수 없습니다. 잠시 후 다시 시도해 주세요.");
@@ -48,14 +50,14 @@ async function oauthToken(env: OAuthEnv, values: Record<string, string>): Promis
 export async function member(env: OAuthEnv, token: string, expectedId?: string): Promise<{ userId: string; login: string }> {
   const user = await github("/user", token);
   const userId = String(user.id ?? ""), login = user.login;
-  const allowed = env.GISUL_GITHUB_USER_IDS.split(",").map(id => id.trim());
+  const allowed = (env.SKILLAR_GITHUB_USER_IDS ?? env.GISUL_GITHUB_USER_IDS).split(",").map(id => id.trim());
   if (!/^\d+$/.test(userId) || typeof login !== "string" || (expectedId && expectedId !== userId)) throw new AuthFailure(401, "연결된 계정을 확인할 수 없습니다. 다시 로그인해 주세요.");
-  if (!allowed.includes(userId)) throw new AuthFailure(403, "이 GitHub 계정에는 IYEN Gisul 접근 권한이 없습니다.");
+  if (!allowed.includes(userId)) throw new AuthFailure(403, "이 GitHub 계정에는 IYEN Skillar 접근 권한이 없습니다.");
   return { userId, login };
 }
 
 function currentGrant(props: Props, env: OAuthEnv): void {
-  if (props.githubClientId !== env.GITHUB_CLIENT_ID) throw new AuthFailure(401, "Gisul 연결 방식이 업데이트되었습니다. OpenClaw에서 GitHub 계정을 한 번 다시 연결해 주세요.");
+  if (props.githubClientId !== env.GITHUB_CLIENT_ID) throw new AuthFailure(401, "Skillar 연결 방식이 업데이트되었습니다. OpenClaw에서 GitHub 계정을 한 번 다시 연결해 주세요.");
 }
 
 async function loginState(request: Request, env: OAuthEnv, state: string): Promise<LoginState> {
@@ -70,8 +72,8 @@ export const authHandler: ExportedHandler<OAuthEnv> = {
   async fetch(request, env) {
     const url = new URL(request.url);
     if (url.pathname.startsWith("/admin/")) return publisherFetch(request, env);
-    if (url.pathname === "/healthz") return Response.json({ ok: true, service: "gisul-iyen", storage: "r2", authentication: "github-oauth", server_version: env.GISUL_SERVER_VERSION ?? "unknown" }, { headers: { "cache-control": "no-store" } });
-    if (url.pathname === "/") return page("팀 스킬을 OpenClaw에서 사용하세요", "<p>Gisul 플러그인을 설치하고 OpenClaw에서 계정을 연결하세요. 허용된 GitHub 계정으로 로그인하면 팀 스킬을 검색하고 사용할 수 있습니다.</p><p>이미 연결했다면 OpenClaw에서 <strong>Gisul에서 이 작업에 맞는 스킬을 찾아줘</strong>라고 요청해 보세요.</p>");
+    if (url.pathname === "/healthz") return Response.json({ ok: true, service: "skillar-iyen", storage: "r2", authentication: "github-oauth", server_version: (env.SKILLAR_SERVER_VERSION ?? env.GISUL_SERVER_VERSION) ?? "unknown" }, { headers: { "cache-control": "no-store" } });
+    if (url.pathname === "/") return page("팀 스킬을 OpenClaw에서 사용하세요", "<p>Skillar 플러그인을 설치하고 OpenClaw에서 계정을 연결하세요. 허용된 GitHub 계정으로 로그인하면 팀 스킬을 검색하고 사용할 수 있습니다.</p><p>이미 연결했다면 OpenClaw에서 <strong>Skillar에서 이 작업에 맞는 스킬을 찾아줘</strong>라고 요청해 보세요.</p>");
     if (!["/authorize", "/callback"].includes(url.pathname)) return new Response("Not found", { status: 404 });
     if (!env.GITHUB_CLIENT_ID || !env.GITHUB_CLIENT_SECRET) return page("아직 연결 준비 중입니다", "<p>관리자가 GitHub 로그인 설정을 완료해야 합니다. 설치한 플러그인은 유지하고 설정 완료 후 연결해 주세요.</p>", 503);
     try {
@@ -103,7 +105,7 @@ export const authHandler: ExportedHandler<OAuthEnv> = {
         const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(saved.verifier));
         const challenge = btoa(String.fromCharCode(...new Uint8Array(digest))).replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/, "");
         const authorize = new URL("https://github.com/login/oauth/authorize");
-        authorize.search = new URLSearchParams({ client_id: env.GITHUB_CLIENT_ID, redirect_uri: `${env.GISUL_PUBLIC_URL}/callback`, state, code_challenge: challenge, code_challenge_method: "S256", allow_signup: "false" }).toString();
+        authorize.search = new URLSearchParams({ client_id: env.GITHUB_CLIENT_ID, redirect_uri: `${(env.SKILLAR_PUBLIC_URL ?? env.GISUL_PUBLIC_URL)}/callback`, state, code_challenge: challenge, code_challenge_method: "S256", allow_signup: "false" }).toString();
         return new Response(null, { status: 302, headers: { location: authorize.href, "cache-control": "no-store", "referrer-policy": "no-referrer" } });
       }
       if (url.pathname === "/callback" && request.method === "GET") {
@@ -113,7 +115,7 @@ export const authHandler: ExportedHandler<OAuthEnv> = {
         await env.OAUTH_KV.delete(`gisul:login:${state}`);
         const code = url.searchParams.get("code");
         if (url.searchParams.has("error") || !code || code.length > 2048) throw new AuthFailure(400, "로그인이 취소되었습니다. OpenClaw에서 연결을 다시 시작할 수 있습니다.");
-        const token = await oauthToken(env, { code, redirect_uri: `${env.GISUL_PUBLIC_URL}/callback`, code_verifier: saved.verifier });
+        const token = await oauthToken(env, { code, redirect_uri: `${(env.SKILLAR_PUBLIC_URL ?? env.GISUL_PUBLIC_URL)}/callback`, code_verifier: saved.verifier });
         const user = await member(env, token.access_token);
         const requested = saved.request.scope.length ? saved.request.scope : ["skills:read"];
         // OAuth connections are read-only; existing machine write credentials stay separate.
@@ -133,14 +135,14 @@ export const authHandler: ExportedHandler<OAuthEnv> = {
 export default {
   async fetch(request: Request, env: OAuthEnv, ctx: ExecutionContext): Promise<Response> {
     let base: URL;
-    try { base = new URL(env.GISUL_PUBLIC_URL); } catch { return new Response("Gisul URL is not configured", { status: 503 }); }
-    if (base.protocol !== "https:" || base.origin !== env.GISUL_PUBLIC_URL || !/^\d+(?:,\s*\d+)*$/.test(env.GISUL_GITHUB_USER_IDS ?? "")) return new Response("Gisul configuration is invalid", { status: 503 });
+    try { base = new URL((env.SKILLAR_PUBLIC_URL ?? env.GISUL_PUBLIC_URL)); } catch { return new Response("Skillar URL is not configured", { status: 503 }); }
+    if (base.protocol !== "https:" || base.origin !== (env.SKILLAR_PUBLIC_URL ?? env.GISUL_PUBLIC_URL) || !/^\d+(?:,\s*\d+)*$/.test((env.SKILLAR_GITHUB_USER_IDS ?? env.GISUL_GITHUB_USER_IDS) ?? "")) return new Response("Skillar configuration is invalid", { status: 503 });
     const path = new URL(request.url).pathname;
     // Preserve the existing publisher and machine-token API on both hostnames.
     // No OAuth token is accepted as a publication or machine-write credential.
     if (path.startsWith("/admin/")) return publisherFetch(request, env);
-    if (path === "/mcp" && (await validBearer(request, env.GISUL_BEARER_TOKEN ?? "") || await validBearer(request, env.GISUL_WRITE_TOKEN ?? ""))) return serveMcp(request, env);
-    if (new URL(request.url).origin !== base.origin) return new Response("Use the canonical Gisul endpoint", { status: 421 });
+    if (path === "/mcp" && (await validBearer(request, (env.SKILLAR_BEARER_TOKEN ?? env.GISUL_BEARER_TOKEN) ?? "") || await validBearer(request, (env.SKILLAR_WRITE_TOKEN ?? env.GISUL_WRITE_TOKEN) ?? ""))) return serveMcp(request, env);
+    if (new URL(request.url).origin !== base.origin) return new Response("Use the canonical Skillar endpoint", { status: 421 });
     const provider = new OAuthProvider<OAuthEnv>({
       apiRoute: "/mcp",
       apiHandler: { async fetch(req, bindings, context) {
@@ -149,7 +151,7 @@ export default {
         try {
           currentGrant(props, bindings);
           await member(bindings, props.githubToken, props.userId);
-          return serveMcp(req, { ...bindings, GISUL_NATIVE_TOOLS: "true", GISUL_GITHUB_TOKEN: undefined }, { canWrite: false });
+          return serveMcp(req, { ...bindings, SKILLAR_NATIVE_TOOLS: "true", SKILLAR_GITHUB_TOKEN: undefined }, { canWrite: false });
         } catch (error) {
           const status = error instanceof AuthFailure ? error.status : 503;
           return Response.json({ error: status === 401 ? "invalid_token" : status === 403 ? "access_denied" : "temporarily_unavailable", message: error instanceof AuthFailure ? error.message : "계정 접근을 확인할 수 없습니다." }, { status, headers: { "cache-control": "no-store", ...(status === 401 ? { "www-authenticate": `Bearer error="invalid_token", resource_metadata="${base.origin}/.well-known/oauth-protected-resource/mcp"` } : {}) } });
@@ -160,7 +162,7 @@ export default {
       scopesSupported: ["skills:read"], accessTokenTTL: 900, refreshTokenTTL: 30 * 86400,
       allowPlainPKCE: false, allowImplicitFlow: false,
       clientIdMetadataDocumentEnabled: true,
-      resourceMetadata: { resource: `${base.origin}/mcp`, authorization_servers: [base.origin], scopes_supported: ["skills:read"], resource_name: "IYEN Gisul" },
+      resourceMetadata: { resource: `${base.origin}/mcp`, authorization_servers: [base.origin], scopes_supported: ["skills:read"], resource_name: "IYEN Skillar" },
       async tokenExchangeCallback(options) {
         let props = options.props as Props;
         try {

@@ -1,7 +1,7 @@
-// SEP-2640 Skills Extension conformance suite for the gisul MCP server.
+// SEP-2640 Skills Extension conformance suite for the skillar MCP server.
 // Speaks raw JSON-RPC over the spawned server's stdio — no SDK client between
 // the assertions and the wire. Fixture roots are built into a temp dir and
-// injected via GISUL_SKILLS_DIRS (ids become root0, root1, ...).
+// injected via SKILLAR_SKILLS_DIRS (ids become root0, root1, ...).
 
 import { after, before, describe, test } from "node:test";
 import assert from "node:assert/strict";
@@ -15,7 +15,7 @@ import { fileURLToPath } from "node:url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DIST = join(__dirname, "..", "dist", "index.js");
 const EXTENSION_ID = "io.modelcontextprotocol/skills";
-const AUTHORITY = "gisul";
+const AUTHORITY = "skillar";
 
 function sha256hex(text) {
   return createHash("sha256").update(Buffer.from(text, "utf8")).digest("hex");
@@ -75,7 +75,7 @@ class RpcClient {
     const result = await this.call("initialize", {
       protocolVersion: "2025-11-25",
       capabilities: {},
-      clientInfo: { name: "gisul-conformance", version: "0.0.0" },
+      clientInfo: { name: "skillar-conformance", version: "0.0.0" },
     });
     this.notify("notifications/initialized");
     return result;
@@ -98,10 +98,10 @@ function startServer(skillsDirs) {
   const child = spawn(process.execPath, [DIST], {
     env: {
       ...process.env,
-      GISUL_ROOT: join(skillsDirs[0], ".runtime"),
-      GISUL_SKILLS_DIRS: skillsDirs.join(":"),
-      GISUL_URI_AUTHORITY: AUTHORITY,
-      GISUL_STATE_DIR: join(tmpdir(), `gisul-test-state-${Date.now()}-${Math.random().toString(36).slice(2)}`),
+      SKILLAR_ROOT: join(skillsDirs[0], ".runtime"),
+      SKILLAR_SKILLS_DIRS: skillsDirs.join(":"),
+      SKILLAR_URI_AUTHORITY: AUTHORITY,
+      SKILLAR_STATE_DIR: join(tmpdir(), `skillar-test-state-${Date.now()}-${Math.random().toString(36).slice(2)}`),
     },
     stdio: ["pipe", "pipe", "pipe"],
   });
@@ -164,7 +164,7 @@ let alphaEntry;
 let subSkillEntry;
 
 before(async () => {
-  const base = await mkdtemp(join(tmpdir(), "gisul-conformance-"));
+  const base = await mkdtemp(join(tmpdir(), "skillar-conformance-"));
   const root0 = join(base, "root0");
   const root1 = join(base, "root1");
 
@@ -371,7 +371,7 @@ describe("legacy compatibility layer", () => {
 
 describe("empty roots", () => {
   test("skills/list returns an empty array when no skills are served", async () => {
-    const emptyBase = await mkdtemp(join(tmpdir(), "gisul-empty-"));
+    const emptyBase = await mkdtemp(join(tmpdir(), "skillar-empty-"));
     const emptyRoot = join(emptyBase, "empty");
     await mkdir(emptyRoot, { recursive: true });
     const emptyClient = startServer([emptyRoot]);

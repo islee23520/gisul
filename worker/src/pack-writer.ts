@@ -16,7 +16,7 @@ export const packWriteTools = [
   { name: "get_pack_write_status", description: "Check an accepted pack commit against active publication. A newer release may contain subsequent edits; load_pack to verify the current definition.", inputSchema: { type: "object", additionalProperties: false, required: ["commit"], properties: { commit: { type: "string", pattern: "^[a-f0-9]{40}$" } } }, annotations: { ...annotation, readOnlyHint: true } },
 ];
 export async function packWrite(env: WriteEnv, tool: string, input: unknown, git: GitCall = gitClient(env)): Promise<Record<string, unknown>> {
-  if (!env.GISUL_GITHUB_TOKEN) throw new ReleaseError("Pack writing is not configured", 503);
+  if (!(env.SKILLAR_GITHUB_TOKEN ?? env.GISUL_GITHUB_TOKEN)) throw new ReleaseError("Pack writing is not configured", 503);
   if (!input || typeof input !== "object" || Array.isArray(input)) throw new ReleaseError("Expected pack arguments", 400);
   const args = input as Record<string, unknown>;
   const spec = packWriteTools.find(t => t.name === tool);
@@ -43,7 +43,7 @@ export async function packWrite(env: WriteEnv, tool: string, input: unknown, git
   // Validate against the exact Git parent, including pending skill changes. Publication
   // validates closure again; never mix mutable main with an unrelated R2 snapshot.
   for (const member of pack.members) {
-    const skillPath = `skills/${member.uri.slice("skill://gisul/gisul/".length)}`;
+    const skillPath = `skills/${member.uri.slice("skill://skillar/iyen/".length)}`;
     const file = entries.find(e => e.path === skillPath && e.type === "blob" && ["100644", "100755"].includes(e.mode));
     if (!file) throw new ReleaseError(`Unavailable canonical skill reference: ${member.uri}`, 400);
     const body = decodeBlob(await git(`/git/blobs/${file.sha}`));

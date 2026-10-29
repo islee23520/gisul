@@ -31,10 +31,10 @@ async function main() {
   await mkdir(dirname(resolve(output)), { recursive: true });
   await writeFile(output, '', { flag: 'wx', mode: 0o600 });
   const log = event => { const line = JSON.stringify({ ts: new Date().toISOString(), ...event }); appendFileSync(output, line+'\n'); if(event.event !== 'stderr')console.log(line); };
-  const root=resolve(plugin), config=JSON.parse(await readFile(join(root,'.mcp.json'),'utf8')).mcpServers.gisul;
+  const root=resolve(plugin), config=JSON.parse(await readFile(join(root,'.mcp.json'),'utf8')).mcpServers.skillar;
   const clients=new Set();
   const connect = async label => {
-    const client=new Client({ name:'gisul-sleep-wake-diagnostic', version:'1' });
+    const client=new Client({ name:'skillar-sleep-wake-diagnostic', version:'1' });
     const transport=new StdioClientTransport({ ...config, cwd:root, stderr:'pipe' });
     transport.stderr?.on('data',bytes=>log({event:'stderr',label,text:bytes.toString()}));
     client.onerror=error=>log({event:'client-error',label,message:String(error)});

@@ -9,7 +9,7 @@ export async function prepareOAuth(output, endpoint) {
   await mkdir(target);
   try {
     await cp(new URL("./plugin/", import.meta.url), target, { recursive: true });
-    await writeFile(resolve(target, "gisul-client.json"), JSON.stringify({ mode: "oauth", endpoint: url }, null, 2) + "\n");
+    await writeFile(resolve(target, "skillar-client.json"), JSON.stringify({ mode: "oauth", endpoint: url }, null, 2) + "\n");
     return { output: target, mode: "oauth", endpoint: url };
   } catch (error) { await rm(target, { recursive: true, force: true }); throw error; }
 }

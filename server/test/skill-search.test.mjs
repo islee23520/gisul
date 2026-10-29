@@ -7,7 +7,7 @@ import { createCodexBridge } from "../dist/codex.js";
 import { searchSkills } from "../dist/skill-search.js";
 
 const make = (source, name, keywords = [], manual = false) => {
-  const uri = `skill://gisul/${source}/${name}/SKILL.md`;
+  const uri = `skill://skillar/${source}/${name}/SKILL.md`;
   return { uri, frontmatter: { name, description: "Inspect a proposed evaluation", keywords,
     ...(manual ? { "disable-model-invocation": true } : {}) },
     resources: [{ uri, size: 0, digest: `sha256:${createHash("sha256").update("").digest("hex")}` }] };

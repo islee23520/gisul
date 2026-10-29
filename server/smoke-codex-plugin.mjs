@@ -3,9 +3,9 @@ import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 import { readFile } from "node:fs/promises";
 import { resolve, join } from "node:path";
 
-const root = resolve(process.argv[2] ?? "../clients/codex/plugin/gisul");
-const config = JSON.parse(await readFile(join(root, ".mcp.json"), "utf8")).mcpServers.gisul;
-const client = new Client({ name: "gisul-plugin-smoke", version: "1" });
+const root = resolve(process.argv[2] ?? "../clients/codex/plugin/skillar");
+const config = JSON.parse(await readFile(join(root, ".mcp.json"), "utf8")).mcpServers.skillar;
+const client = new Client({ name: "skillar-plugin-smoke", version: "1" });
 try {
   await client.connect(new StdioClientTransport({ ...config, cwd: root, stderr: "pipe" }));
   const parseResult = result => {

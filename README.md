@@ -1,100 +1,130 @@
+<h1 align="center">skillar</h1>
+<p align="center"><strong>Your skills. Your agents. One local workspace.</strong></p>
 <p align="center"><a href="README.md">English</a> · <a href="README.ko.md">한국어</a></p>
-
 <p align="center">
-  <img src="docs/assets/gisul-workshop.png" alt="A mechanical arm selects an instruction card from a workshop cabinet and brings it to a verification bench" width="100%">
+  <a href="https://www.npmjs.com/package/skillar"><img src="https://img.shields.io/npm/v/skillar?color=c44b2b&amp;label=npm" alt="npm version"></a>
+  <a href="https://github.com/changeroa/skillar/blob/main/local/package.json"><img src="https://img.shields.io/badge/Node.js-%E2%89%A524.15-333333" alt="Node.js 24.15 or newer"></a>
+  <a href="https://github.com/changeroa/skillar/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-333333" alt="MIT license"></a>
 </p>
+<p align="center"><img src="https://raw.githubusercontent.com/changeroa/skillar/main/docs/assets/gisul-workshop.png" width="960" alt="An articulated arm selects an instruction card from a cabinet and brings it to a workbench. Black ink and vermilion on warm ivory."></p>
 
-<h1 align="center">gisul</h1>
-<p align="center"><strong>You uploaded tacit knowledge? Cut the bullshit.</strong><br>Stop selling magic. Give your agent a procedure.</p>
-<p align="center">
-  <a href="#get-started">Get started</a> ·
-  <a href="https://github.com/changeroa/gisul-skills">Explore skills</a> ·
-  <a href="docs/technical-reference.md">Technical reference</a> ·
-  <a href="https://github.com/changeroa/gisul/issues">Report an issue</a>
-</p>
-<p align="center">
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/changeroa/gisul?style=flat-square&color=c6492d" alt="License"></a>
-  <img src="https://img.shields.io/badge/interface-MCP-242424?style=flat-square" alt="MCP interface">
-  <img src="https://img.shields.io/badge/skills-loaded_on_demand-c6492d?style=flat-square" alt="Skills loaded on demand">
-</p>
+Connect the `SKILL.md` folders already on your machine to your coding agents. skillar searches them over MCP, records what each session searched and read, and makes that history visible in a local dashboard.
 
----
+**Index in place · Read on demand · Keep history local**
 
-## You didn't upload expertise. You wrote a prompt.
+[Quick start](#quick-start) · [Supported runtimes](#supported-runtimes) · [Privacy](#privacy-and-storage) · [CLI & configuration](local/README.md)
 
-**A few lines of instructions don't turn a model into a seasoned practitioner.**
+## Quick start
 
-“Think like an expert.” “Review this carefully.” “Use your best judgment.”
+macOS or Linux · **Node.js 24.15+**
 
-Fine. What should it read? What should it check? What evidence lets it call the job done?
+> **Upgrading from gisool?** Read the [migration guide](docs/migration-skillar.md) **before installing**. Both packages own the `gisool` command; a direct global install collides. Follow the stop, backup, and package-handoff steps rather than using `--force`.
 
-**gisul is an MCP skill registry that finds and delivers those working instructions.** Agents discover and read Git-managed `SKILL.md` bundles and supporting material when they need them. You don't copy every skill into every agent's directory.
-
-Craftsmanship in a text file? No. **A procedure the agent can at least try to follow? That's the point.**
-
-## Concrete instructions. Verifiable results.
-
-| The vague request | The procedure to load instead |
-| --- | --- |
-| “Make the UI good.” | Distinguish loading, empty results, missing permissions, and failures. Check the next action in each state. |
-| “Review the code carefully.” | Select reviews that match the change's risks. Recheck findings against source code and counterevidence. |
-| “The tests pass, right?” | Follow save, failure, recovery, and re-entry—not just a single button click. |
-
-These workflows live in [gisul-skills](https://github.com/changeroa/gisul-skills). **gisul delivers the instructions. gisul-skills maintains their content.** Reading a skill is not proof that the work succeeded.
-
-## Find what matters. Load what you need.
-
-```mermaid
-flowchart LR
-    A[User task] --> B[Find relevant skills]
-    B --> C[Read selected instructions]
-    C --> D[Read supporting material]
-    D --> E[Agent execution and verification]
-    G[Git-managed skill repository] --> R[Verified immutable release]
-    R --> C
-    R --> D
-```
-
-- **Load on demand.** Clients carry a small loader. Workflow content stays remote.
-- **Read a consistent version.** Keep instructions and supporting files pinned to the selected release, with file integrity checks.
-- **Different agents, shared content.** Supported clients discover the same immutable remote releases.
-- **Instructions are not permissions.** Loading a skill does not expand execution authority. Host approval and security policies still apply.
-
-## Get started
-
-**Just browsing? Start with [gisul-skills](https://github.com/changeroa/gisul-skills).**
-
-To connect an agent, follow the installation and authentication guide for your runtime. You need access to the Gisul deployment you connect to. Reading this public repository does not grant access to a hosted server.
-
-| Runtime | Installation and connection |
-| --- | --- |
-| Codex | [Personal plugin](clients/codex/README.md) · [self-hosted team HTTPS plugin](docs/team-plugin.md) |
-| OpenClaw | [Bundle, loader, and OAuth connection](clients/openclaw/README.md) |
-| oh-my-openagent / OmO 5 | [Installer and loader](clients/oh-my-openagent/README.md) |
-| Gajae Code | [Interview, planning, and execution integration](clients/gajae-code/README.md) |
-
-Once connected, ask:
-
-> Find and read the relevant skills on Gisul, then apply them to this task. Distinguish what you verified from what you haven't checked.
-
-A team deployment uses its configured GitHub organization and content repository. Personal catalogs are not automatically exposed to it.
-
-<details>
-<summary><strong>Want to run the server yourself?</strong></summary>
-
-With Node.js and npm installed:
+For a fresh installation:
 
 ```sh
-git clone https://github.com/changeroa/gisul.git
-cd gisul
-npm --prefix server ci
-npm --prefix server run build
-node server/dist/index.js --http
+npm install -g skillar
+skillar init --dry-run    # preview config and service changes; write nothing
+skillar init              # connect detected runtimes and install the background service
+skillar open              # open the local dashboard
 ```
 
-The default HTTP endpoint is `POST http://127.0.0.1:8788/mcp`. Default skill roots are `~/gisul/skills`, `~/.codex/skills`, and `~/.agents/skills`. Starting a local server does not automatically connect it to a hosted catalog.
+`init` installs a LaunchAgent on macOS or a systemd user unit on Linux. The daemon listens on `127.0.0.1:8799`. Prefer a foreground process? Run `skillar init --no-service`, then `skillar serve`.
 
-For production deployment, authentication, and release publication, see the [deployment guide](docs/deployment.md) and [technical reference](docs/technical-reference.md).
+Already using skillar? `skillar doctor` checks your installation. For a source checkout, see [development setup](local/README.md#develop).
+
+## From a skill folder to a session trace
+
+| Step | What happens |
+| --- | --- |
+| **Discover** | Index existing skill roots without copying or editing their files. Agents search with `search_skills` and receive ranked candidates. |
+| **Read** | The host reads the chosen `SKILL.md` and supporting files through standard MCP `resources/read`. Reading is evidence, not permission to execute. |
+| **Trace** | Inspect sessions, search candidates, skill reads, task → skill → outcome flows, and activity by weekday and hour in the dashboard. |
+
+Capture can also observe skills used natively when runtime hooks or telemetry report them. [Skill tracing](local/docs/skill-tracing.md) explains attribution, evidence limits, and the **herdr requirement for pane/session tracing**. Core MCP serving and session collection continue if herdr is unavailable.
+
+## Supported runtimes
+
+| Runtime | `--runtime` ID |
+| --- | --- |
+| Claude Code | `claude-code` |
+| Codex | `codex` |
+| Gemini CLI | `gemini` |
+| Cursor | `cursor` |
+| OmO | `omo` |
+| Gajae Code | `gajae` |
+| OpenClaw | `openclaw` |
+
+`init` detects installed runtimes. Select a subset with `skillar init --runtime codex,claude-code`. Packs configure MCP and runtime-specific telemetry or capture hooks; capture coverage varies by runtime.
+
+Both MCP revision **2026-07-28** and the legacy `initialize` handshake are supported. Skill bodies require a host resource reader. See [protocol and compatibility](local/README.md#skills-over-mcp) for headers, stdio, and legacy transport limits.
+
+## Privacy and storage
+
+The local daemon stores prompts, searches, loads, and supporting-file reads in SQLite. It listens on loopback only, protects MCP, ingest, and API requests with a local bearer token, and does not upload captured telemetry. The dashboard uses a local authenticated cookie. Connected agents and their model providers handle data separately.
+
+Choose what to retain in `~/.skillar/config.json`:
+
+| Setting | Behavior |
+| --- | --- |
+| `captureLevel: "full"` | Store captured text as sent (default). |
+| `captureLevel: "redacted"` | Mask recognized secrets and truncate text to 2,048 characters; this does not guarantee every secret is removed. |
+| `captureLevel: "metadata"` | Keep text digests and lengths, without the text. |
+| `retentionDays` | Delete old sessions; `null` keeps history. |
+
+Fresh installs use `~/.skillar/`; `SKILLAR_HOME` selects another home. Existing legacy homes and databases are reused according to the [migration rules](docs/migration-skillar.md#local-state-and-configuration).
+
+| Path in the selected home | Purpose |
+| --- | --- |
+| `config.json` | Port, capture level, retention, and skill roots |
+| `token` | Local bearer token, mode `0600` |
+| `skillar.db` | Skill index, sessions, events, and loads; existing `gisool.db` stays in place |
+| `logs/daemon.log` | Daemon log |
+| `backups/` | Per-run configuration backups for rollback |
+
+## Keep your setup portable
+
+```sh
+skillar doctor                                  # check daemon, service, index, capture, and herdr
+skillar doctor --json
+skillar init --rollback                         # undo the newest init run
+skillar init --rollback --all                    # undo every run
+skillar export ~/skillar-backup                  # settings only
+skillar export ~/skillar-backup --with-history   # include sessions, events, and loads
+skillar import ~/skillar-backup --dry-run        # preview; existing keys are kept
+skillar eval                                    # measure search quality
+```
+
+Use `skillar open --print` to print the dashboard URL without opening a browser. See the [CLI guide](local/README.md) for import, service management, settings, and protocol details.
+
+## Documentation
+
+| Guide | Use it for |
+| --- | --- |
+| [Local CLI & MCP](local/README.md) | Installation, commands, settings, and protocol reference |
+| [Upgrade & compatibility](docs/migration-skillar.md) | Safe package handoff, legacy homes, commands, and identities |
+| [Skill tracing](local/docs/skill-tracing.md) | Capture coverage, herdr joins, attribution, and evidence limits |
+| [Architecture](docs/skillar.md) | Daemon, storage, ingest, and API design |
+
+## Remote registry and team distribution
+
+The local CLI needs no hosted registry. This repository also contains a separate [Node.js registry](server/README.md) (`server/`, stdio or Streamable HTTP) and a Cloudflare Worker (`worker/`) for authenticated distribution from private R2 immutable releases. They implement the [SEP-2640 Skills Extension](https://github.com/modelcontextprotocol/modelcontextprotocol/pull/2640).
+
+**The former personal Cloudflare deployment was retired on 2026-10-29.** Historical addresses are not maintained endpoints; organization deployments are separate external resources. Self-hosting requires your own configuration and release validation. `skillar init --disable-remote` can disable a remote registration in connected runtimes.
+
+<details>
+<summary>Registry clients, deployment, and historical context</summary>
+
+| Runtime | Integration |
+| --- | --- |
+| Codex | [Self-hosted team HTTPS + OAuth plugin](docs/team-plugin.md) · [Codex client](clients/codex/README.md) |
+| oh-my-openagent / OmO 5 (`omo-ai`) | [OAuth stdio bridge and discovery extension](clients/oh-my-openagent/README.md) |
+| Gajae Code (`gjc`) | [OAuth stdio bridge and workflow integration](clients/gajae-code/README.md) |
+| OpenClaw | [OAuth stdio bridge and bootstrap discovery hook](clients/openclaw/README.md) |
+
+The Worker uses `SKILLS_BUCKET`, a reader `SKILLAR_BEARER_TOKEN`, and a separate `SKILLAR_PUBLISH_TOKEN` for publication. `server/ops/` contains new-install templates, not live credentials or proof of an active deployment.
+
+[Deployment, immutable release format, rollback, and production gates](docs/deployment.md) · [Self-hosted team setup](docs/team-plugin.md) · [Historical session handoff](docs/SESSION_CONTEXT.md)
 
 </details>
 
@@ -131,10 +161,8 @@ This started as a personal project. Reading instructions doesn't make an agent a
 
 ## Contributing
 
-With Node.js 24 and npm, run `node scripts/verify.mjs` from the checkout to
-perform the same locked installs, builds, tests, search and plugin checks, and
-Worker dry runs as CI. It does not deploy or publish content.
+With Node.js 24 and npm, run `node scripts/verify.mjs` from the checkout to perform the same locked installs, builds, tests, search and plugin checks, and Worker dry-runs as CI. It does not deploy or publish content.
 
-Broken connection? [Open an issue](https://github.com/changeroa/gisul/issues) with reproduction steps and sanitized errors. Code changes should include verification evidence. Propose workflow content in [gisul-skills](https://github.com/changeroa/gisul-skills). Keep tokens and personal data out of reports.
+## License
 
-[MIT License](LICENSE) · *gisul* comes from the Korean word for skill, craft, or technique.
+[MIT](LICENSE). The name comes from **기술** — Korean for skill, craft, or technique.

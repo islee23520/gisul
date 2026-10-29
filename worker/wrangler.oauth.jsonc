@@ -20,9 +20,9 @@
     "global_fetch_strictly_public"
   ],
   "vars": {
-    "GISUL_NATIVE_TOOLS": "true",
-    "GISUL_PUBLIC_URL": "https://gisul.iyendev.com",
-    "GISUL_GITHUB_USER_IDS": "65930387",
+    "SKILLAR_NATIVE_TOOLS": "true",
+    "SKILLAR_PUBLIC_URL": "https://gisul.iyendev.com",
+    "SKILLAR_GITHUB_USER_IDS": "65930387",
     "GITHUB_CLIENT_ID": "Ov23liaj8ZrnSwj4l9K0"
   },
   "kv_namespaces": [

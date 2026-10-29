@@ -1,11 +1,11 @@
-# Gisul connection diagnostics
+# Skillar connection diagnostics
 
 Run the diagnostic against the exact installed plugin:
 
 ```sh
 cd server
-node diagnose-codex-connection.mjs /path/to/installed/gisul upstream-close 2 /path/to/close.jsonl
-node diagnose-codex-connection.mjs /path/to/installed/gisul idle 1800 /path/to/idle.jsonl
+node diagnose-codex-connection.mjs /path/to/installed/skillar upstream-close 2 /path/to/close.jsonl
+node diagnose-codex-connection.mjs /path/to/installed/skillar idle 1800 /path/to/idle.jsonl
 ```
 
 Each JSONL file contains connection metadata, timestamped bridge stderr, and
@@ -15,7 +15,7 @@ and duration, without skill bodies. Existing output files are never overwritten.
 To observe an actual MacBook sleep/resume without triggering power changes:
 
 ```sh
-node diagnose-sleep-wake.mjs /path/to/installed/gisul 86400 /path/to/sleep-wake.jsonl
+node diagnose-sleep-wake.mjs /path/to/installed/skillar 86400 /path/to/sleep-wake.jsonl
 ```
 
 The probe first verifies search/load and remains connected. It checks search

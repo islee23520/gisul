@@ -5,7 +5,7 @@ import { endpoint, gajaeTransport, omoTransport, parseArgs, remotePackage, resol
 export async function login(runtime, argv = process.argv.slice(2)) {
   const options = parseArgs(argv);
   if (options.help) {
-    console.log(`Usage: node clients/${runtime}/login.mjs [--agent-dir PATH] [--dry-run]\nConnects Gisul through browser OAuth and lists the available MCP tools. Credentials stay in this profile's gisul/auth directory.`);
+    console.log(`Usage: node clients/${runtime}/login.mjs [--agent-dir PATH] [--dry-run]\nConnects Skillar through browser OAuth and lists the available MCP tools. Credentials stay in this profile's skillar/auth directory.`);
     return;
   }
   const agentDir = resolveAgentDir(runtime, options);
@@ -16,6 +16,6 @@ export async function login(runtime, argv = process.argv.slice(2)) {
   else {
     await mkdir(transport.env.MCP_REMOTE_CONFIG_DIR, { recursive: true, mode: 0o700 });
     const result = spawnSync("npx", args, { env: { ...process.env, ...transport.env }, stdio: "inherit", timeout: 600000 });
-    if (result.error || result.status !== 0) throw new Error("Gisul sign-in/read check did not finish successfully; retry login before starting the runtime.");
+    if (result.error || result.status !== 0) throw new Error("Skillar sign-in/read check did not finish successfully; retry login before starting the runtime.");
   }
 }

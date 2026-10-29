@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "skillar": {
+      "transport": "stdio",
+      "command": "__COMMAND__",
+      "args": "__ARGS__",
+      "env": {
+        "SKILLAR_HOME": "__SKILLAR_HOME__"
+      }
+    }
+  }
+}

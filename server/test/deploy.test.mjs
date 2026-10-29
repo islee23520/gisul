@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { deploy, inventory } from "../deploy-runtime.mjs";
 
 async function fixture(t) {
-  const root = await mkdtemp(join(tmpdir(), "gisul-deploy-test-"));
+  const root = await mkdtemp(join(tmpdir(), "skillar-deploy-test-"));
   t.after(() => rm(root, { recursive: true, force: true }));
   await mkdir(join(root, "server"));
   await mkdir(join(root, "skills"));

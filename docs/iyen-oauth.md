@@ -1,13 +1,13 @@
-# IYEN Gisul OAuth
+# IYEN Skillar OAuth
 
 The IYEN Worker can serve read-only MCP clients through GitHub OAuth at
-`https://gisul.iyendev.com/mcp`. OAuth is enabled only when `GISUL_PUBLIC_URL`
+`https://gisul.iyendev.com/mcp`. OAuth is enabled only when `SKILLAR_PUBLIC_URL`
 is set. The ordinary Wrangler config retains the existing token-only behavior.
 
 OAuth uses Cloudflare's pinned provider, S256 PKCE, explicit browser consent,
 cookie-bound expiring login state, single-use authorization flow, short-lived
 access tokens and refresh tokens. Only `skills:read` is accepted. GitHub login
-requests no organization or repository scope. `GISUL_GITHUB_USER_IDS` is a
+requests no organization or repository scope. `SKILLAR_GITHUB_USER_IDS` is a
 comma-separated allowlist of stable numeric GitHub IDs; account access is
 checked at login, MCP requests and refresh. The initial deployment permits
 `changeroa` (`65930387`). Changing a username does not transfer access.
@@ -24,10 +24,10 @@ they preserve immutable commit and load identity across release changes.
 ## Configuration and deployment
 
 `worker/wrangler.oauth.jsonc` explicitly targets account
-`8277c1acc712e4a9d00479255015c200`, Worker `gisul-mcp`, the existing
+`8277c1acc712e4a9d00479255015c200`, Worker `skillar-mcp`, the existing
 `gisul-skills-releases` bucket and dedicated `gisul-iyen-oauth` KV namespace.
 The personal GitHub OAuth app is
-[IYEN Gisul](https://github.com/settings/applications/3896163), with homepage
+[IYEN Skillar](https://github.com/settings/applications/3896163), with homepage
 `https://gisul.iyendev.com` and callback `https://gisul.iyendev.com/callback`.
 Provision `GITHUB_CLIENT_SECRET` as a Worker secret through stdin or a private
 file. Never commit it or print the secret/config contents during verification.
@@ -47,14 +47,14 @@ npx wrangler deploy --config wrangler.oauth.jsonc --dry-run
 
 Push the verified commit and check its PR/CI before deployment. Deploy that
 exact source using `--config wrangler.oauth.jsonc` and
-`--var GISUL_SERVER_VERSION:<commit>`. Keep the old deployment version and
+`--var SKILLAR_SERVER_VERSION:<commit>`. Keep the old deployment version and
 machine connection until the new OAuth client completes a live search, pinned
 load and supporting read. A health response or metadata endpoint alone does
 not verify login or tool calls.
 
-The OpenClaw loader in [PR #8](https://github.com/changeroa/gisul/pull/8)
+The OpenClaw loader in [PR #8](https://github.com/changeroa/skillar/pull/8)
 supports preparing a full OAuth bundle with this endpoint. Authenticate the
-OpenClaw profile, then remove only the superseded standalone Gisul MCP entry,
+OpenClaw profile, then remove only the superseded standalone Skillar MCP entry,
 refresh the Gateway and test a fresh agent session. Other servers and settings
 remain unchanged.
 
@@ -78,11 +78,11 @@ read, verifying both SHA-256 digests without using the legacy bearer token.
 
 Mac mini OpenClaw `2026.9.3` now uses the full bundle built from client source
 `b5eddedfa03e94dde8791e01934f5d8014ca6564`, installed at
-`/Users/iyen/.openclaw/extensions/gisul-openclaw`, targeting the IYEN endpoint.
-Only the standalone `mcp.servers.gisul` registration was removed; a semantic
+`/Users/iyen/.openclaw/extensions/skillar-openclaw`, targeting the IYEN endpoint.
+Only the standalone `mcp.servers.skillar` registration was removed; a semantic
 comparison verified that all other configuration was preserved. The original
 configuration and bundle remain in the private `pre-oauth-backup` directory
-under `/Users/iyen/.local/share/dev-tools/openclaw-gisul-oauth/b5eddedfa03e94dde8791e01934f5d8014ca6564`.
+under `/Users/iyen/.local/share/dev-tools/openclaw-skillar-oauth/b5eddedfa03e94dde8791e01934f5d8014ca6564`.
 
 After a graceful Gateway restart, its health check, an installed-bundle-only
 native test and a fresh agent session all passed. The agent's terminal receipt

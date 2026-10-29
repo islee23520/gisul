@@ -1,11 +1,12 @@
-# gisul MCP server
+# skillar MCP server
 
+[Upgrade and compatibility notes](../docs/migration-skillar.md).
 Tiny MCP server for serving personal `SKILL.md` directories from a local machine over stdio, SSH, or Streamable HTTP.
 
 ## Layout
 
 ```text
-~/gisul/
+~/iyen-skills/
   skills/
     example/
       SKILL.md
@@ -15,16 +16,16 @@ Tiny MCP server for serving personal `SKILL.md` directories from a local machine
 
 By default, the server reads these roots in order:
 
-- `~/gisul/skills`
+- `~/iyen-skills/skills`
 - `~/.codex/skills`
 - `~/.agents/skills`
 
 Resource URIs include the source root to avoid duplicate-name collisions:
 
 ```text
-skill://gisul/gisul/example/SKILL.md
-skill://gisul/codex/re0/SKILL.md
-skill://gisul/agents/korean-spell-check/SKILL.md
+skill://skillar/iyen/example/SKILL.md
+skill://skillar/codex/re0/SKILL.md
+skill://skillar/agents/korean-spell-check/SKILL.md
 ```
 
 ## Client command
@@ -34,9 +35,9 @@ Use a local machine as an on-demand MCP server over SSH:
 ```json
 {
   "mcpServers": {
-    "gisul": {
+    "skillar": {
       "command": "ssh",
-      "args": ["your-host", "gisul"]
+      "args": ["your-host", "skillar"]
     }
   }
 }
@@ -54,9 +55,9 @@ The canonical surface is the SEP-2640 Skills Extension (`io.modelcontextprotocol
 Resource URIs include the source root id and the explicit file path:
 
 ```text
-skill://gisul/gisul/example/SKILL.md
-skill://gisul/codex/re0/SKILL.md
-skill://gisul/agents/korean-spell-check/references/GUIDE.md
+skill://skillar/iyen/example/SKILL.md
+skill://skillar/codex/re0/SKILL.md
+skill://skillar/agents/korean-spell-check/references/GUIDE.md
 ```
 
 To be listed, a skill needs `SKILL.md` frontmatter with `name` and `description`, and `name` equal to the directory name (nested skills publish their own entries). Skills exceeding 512 files or 16 MiB total are skipped and logged to stderr.
@@ -65,37 +66,37 @@ The `skills_list`, `skills_get`, and `resources_read` tools are kept as a compat
 
 Trusted stdio/SSH connections also expose `create_skill` and `update_skill`:
 
-- `create_skill({name, markdown, source?})` creates a top-level package with a complete YAML-frontmatter SKILL.md. The default source is the first configured root (`gisul` with default settings). Existing directories are never replaced.
+- `create_skill({name, markdown, source?})` creates a top-level package with a complete YAML-frontmatter SKILL.md. The default source is the first configured root (`skillar` with default settings). Existing directories are never replaced.
 - `update_skill({uri, markdown, expected_digest})` replaces only an existing SKILL.md, including nested skills. Use the exact canonical URI and `sha256:…` digest from the resource manifest (or Codex `load_skill.digest`). Supporting files are preserved. Reload and reconcile after a conflict.
 - Names for new skills use lowercase letters, digits and hyphens, up to 64 characters. Frontmatter name must match the directory and description must be nonempty. Package size limits still apply.
-- Updates reject symlinked skill paths. Atomic replacement avoids partial files; a per-root filesystem lock serializes cooperating SSH processes and digest checks prevent lost edits. External filesystem editors do not participate in this lock. If a process is terminated while holding `.gisul-write-lock`, an operator must verify no writer is active before removing that directory.
+- Updates reject symlinked skill paths. Atomic replacement avoids partial files; a per-root filesystem lock serializes cooperating SSH processes and digest checks prevent lost edits. External filesystem editors do not participate in this lock. If a process is terminated while holding `.skillar-write-lock`, an operator must verify no writer is active before removing that directory.
 - HTTP remains read-only, including for existing bearer tokens. No new privileges are granted to issued HTTP clients. Writes store instruction text; they never execute it.
 
 The Codex bridge exposes the same write tools. It requires `load_skill` before updates and retains manifest verification, so reread with `load_skill` after a successful write.
 
-Set `GISUL_ROOT` to change the default gisul root, or use explicit source IDs to
+Set `SKILLAR_ROOT` to change the default skillar root, or use explicit source IDs to
 keep existing URIs when moving content:
 
 ```sh
-GISUL_SKILL_ROOTS="gisul=/absolute/path/skills;codex=/absolute/path/codex-skills" gisul
+SKILLAR_SKILL_ROOTS="iyen=/absolute/path/skills;codex=/absolute/path/codex-skills" skillar
 ```
 
-`GISUL_SKILL_ROOTS` uses **semicolons** between `id=absolute-directory` entries on
+`SKILLAR_SKILL_ROOTS` uses **semicolons** between `id=absolute-directory` entries on
 every platform. IDs must be unique and match `[A-Za-z0-9][A-Za-z0-9_-]*`. Spaces
 and equals signs in directories are supported; semicolons are separators. A root
 may itself be a symlink. Root ordering and directory names do not change source
-IDs such as `skill://gisul/gisul/…`.
+IDs such as `skill://skillar/iyen/…`.
 
-The older `GISUL_SKILLS_DIRS` remains supported with platform path delimiters
+The older `SKILLAR_SKILLS_DIRS` remains supported with platform path delimiters
 (`:` on macOS), but is deprecated because it assigns positional `root0`, `root1`
-IDs. `GISUL_SKILL_ROOTS` takes precedence when both are set and reports that on
+IDs. `SKILLAR_SKILL_ROOTS` takes precedence when both are set and reports that on
 stderr. Malformed named-root configuration fails at startup rather than falling
 back to different URI identities.
 
 ### Release identity and URI aliases
 
-The server reads `${GISUL_ROOT}/release.json` on each `skills/list` and
-`skills/get` request (override with `GISUL_RELEASE_FILE`). Responses include
+The server reads `${SKILLAR_ROOT}/release.json` on each `skills/list` and
+`skills/get` request (override with `SKILLAR_RELEASE_FILE`). Responses include
 `_meta.server_version`, and, when a release file exists, `_meta.release` and
 `_meta.commit`. Requests fail if the release changes while being read. A release
 that includes `skills: [{uri, manifest_digest}]` must match the served manifests;
@@ -106,16 +107,16 @@ records sorted by URI with ordinary string comparison. The digest has the
 `sha256:` prefix. A release file may initially omit `skills` for compatibility;
 published content snapshots should always include the manifests.
 
-`${GISUL_ROOT}/aliases.json` (override with `GISUL_ALIASES_FILE`) is an object
+`${SKILLAR_ROOT}/aliases.json` (override with `SKILLAR_ALIASES_FILE`) is an object
 mapping old file-explicit skill URIs to canonical URIs. `skills/get` resolves
 same-server aliases and includes `_meta.movedFrom` when redirected. Alias chains
 are bounded and cycles rejected. Read the returned canonical resource URIs;
 resource reads do not silently redirect old file paths.
 
-When serving through a public tunnel, set `GISUL_ALLOWED_HOSTS` to include the tunnel hostname:
+When serving through a public tunnel, set `SKILLAR_ALLOWED_HOSTS` to include the tunnel hostname:
 
 ```text
-GISUL_ALLOWED_HOSTS=127.0.0.1,localhost,gisul-origin.example.com
+SKILLAR_ALLOWED_HOSTS=127.0.0.1,localhost,skillar-origin.example.com
 ```
 
 ## HTTP mode
@@ -131,8 +132,8 @@ The persistent deployment runs Streamable HTTP MCP on `127.0.0.1:8788`.
 Secrets live outside the repository:
 
 ```text
-~/.config/secrets/gisul-mcp-bearer-token
-~/.config/secrets/gisul-mcp-admin-token
+~/.config/secrets/skillar-mcp-bearer-token
+~/.config/secrets/skillar-mcp-admin-token
 ```
 
 ## Modern and legacy protocol support
@@ -156,5 +157,5 @@ TTL never replaces manifest verification and does not guarantee unchanged conten
 `src/protocol.ts` isolates the modern wire adapter from the pinned legacy SDK.
 The server shares the same handlers for both eras; the adapter does not add MRTR,
 subscriptions, dynamic skills or execution capabilities. Modern client support is
-scoped to the gisul methods. Existing clients can continue using legacy MCP.
+scoped to the skillar methods. Existing clients can continue using legacy MCP.
 The deployment smoke checks modern stdio and HTTP, plus legacy initialization.

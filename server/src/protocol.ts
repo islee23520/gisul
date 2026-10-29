@@ -27,13 +27,19 @@ export class ServerProtocolTransport implements Transport {
   onclose?: Transport["onclose"];
   private legacyInitialized = false;
   private requests = new Map<string | number, { method: string; modern: boolean }>();
+  // Client identity broker state: captured once from the initialize request.
+  clientIdentity: { name?: string; version?: string } | undefined;
   constructor(private inner: Transport, legacyHttp = false) { this.legacyInitialized = legacyHttp; }
   async start() {
     this.inner.onclose = () => this.onclose?.();
     this.inner.onerror = error => this.onerror?.(error);
     this.inner.onmessage = (message, extra) => {
       if ("method" in message && "id" in message) {
-        if (message.method === "initialize") this.legacyInitialized = true;
+        if (message.method === "initialize") {
+          this.legacyInitialized = true;
+          const info = (message.params as { clientInfo?: { name?: string; version?: string } } | undefined)?.clientInfo;
+          if (info && typeof info.name === "string") this.clientIdentity = { name: info.name, version: typeof info.version === "string" ? info.version : undefined };
+        }
         const modern = isModern(message) || (!this.legacyInitialized && message.method !== "initialize");
         const error = modern ? modernError(message) : undefined;
         if (error) { void this.inner.send({ jsonrpc: "2.0", id: message.id, error }).catch(e => this.onerror?.(e)); return; }

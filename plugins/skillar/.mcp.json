@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "skillar": {
+      "type": "http",
+      "url": "https://skillar.example.invalid/mcp",
+      "scopes": [
+        "skills:read",
+        "skills:write"
+      ]
+    }
+  }
+}

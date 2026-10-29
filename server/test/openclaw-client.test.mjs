@@ -5,7 +5,7 @@ import { access, chmod, mkdir, mkdtemp, readFile, readdir, realpath, rm, stat, w
 import { tmpdir } from "node:os";
 import { delimiter, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import hook from "../../clients/openclaw/plugin/hooks/gisul-discovery/handler.js";
+import hook from "../../clients/openclaw/plugin/hooks/skillar-discovery/handler.js";
 import { bridgePlan, parseArgs, resolveStateDir } from "../../clients/openclaw/plugin/scripts/bridge.mjs";
 import { prepareExisting } from "../../clients/openclaw/prepare-existing.mjs";
 import { prepareOAuth } from "../../clients/openclaw/prepare-oauth.mjs";
@@ -13,7 +13,7 @@ import { prepareOAuth } from "../../clients/openclaw/prepare-oauth.mjs";
 const bundle = fileURLToPath(new URL("../../clients/openclaw/plugin/", import.meta.url));
 const bridge = join(bundle, "scripts/bridge.mjs");
 async function fixture(t) {
-  const root = await realpath(await mkdtemp(join(tmpdir(), "gisul-openclaw-unit-")));
+  const root = await realpath(await mkdtemp(join(tmpdir(), "skillar-openclaw-unit-")));
   t.after(() => rm(root, { recursive: true, force: true }));
   return root;
 }
@@ -30,7 +30,7 @@ function execute(args, env, input = "", script = bridge) {
 }
 
 test("prepared OAuth bundle uses the selected endpoint for both login and runtime", async t => {
-  const root = await fixture(t), output = join(root, "extensions/gisul-openclaw");
+  const root = await fixture(t), output = join(root, "extensions/skillar-openclaw");
   await mkdir(join(root, "extensions"));
   await prepareOAuth(output, "https://gisul.iyendev.com/mcp");
   const script = join(output, "scripts/bridge.mjs");
@@ -42,7 +42,7 @@ test("prepared OAuth bundle uses the selected endpoint for both login and runtim
   const login = JSON.parse(loginResult.stdout);
   assert.equal(runtime.args[2], "https://gisul.iyendev.com/mcp");
   assert.equal(login.args[3], runtime.args[2]);
-  assert.equal(runtime.env.MCP_REMOTE_CONFIG_DIR, join(root, "gisul/auth"));
+  assert.equal(runtime.env.MCP_REMOTE_CONFIG_DIR, join(root, "skillar/auth"));
   assert.deepEqual(runtime.env, login.env);
   await assert.rejects(prepareOAuth(output, "https://gisul.iyendev.com/mcp"), { code: "EEXIST" });
   for (const endpoint of ["http://host/mcp", "https://user:secret@host/mcp", "https://host/mcp?token=x", "https://host/other", "https://host/mcp#x"]) {
@@ -54,15 +54,15 @@ test("prepared OAuth bundle uses the selected endpoint for both login and runtim
 test("existing-MCP bundle adds guidance without replacing transport or credentials", async t => {
   const root = await fixture(t), output = join(root, "existing");
   const config = join(root, "openclaw.json");
-  const before = '{"mcp":{"servers":{"gisul":{"command":"existing-adapter","env":{"TOKEN":"fixture-only"}}}}}';
+  const before = '{"mcp":{"servers":{"skillar":{"command":"existing-adapter","env":{"TOKEN":"fixture-only"}}}}}';
   await writeFile(config, before);
   assert.equal((await prepareExisting(output)).mcpRegistrationIncluded, false);
   assert.equal(await readFile(config, "utf8"), before);
   const manifest = JSON.parse(await readFile(join(output, ".codex-plugin/plugin.json"), "utf8"));
   assert.equal(manifest.mcpServers, undefined);
-  assert.deepEqual((await readdir(output)).sort(), [".codex-plugin", "README.md", "gisul-client.json", "hooks", "package.json", "skills"]);
-  assert.match(await readFile(join(output, "skills/gisul/SKILL.md"), "utf8"), /existing-MCP mode preserves/);
-  assert.match(await readFile(join(output, "README.md"), "utf8"), /existing mcp.servers.gisul/);
+  assert.deepEqual((await readdir(output)).sort(), [".codex-plugin", "README.md", "hooks", "package.json", "skillar-client.json", "skills"]);
+  assert.match(await readFile(join(output, "skills/skillar/SKILL.md"), "utf8"), /existing-MCP mode preserves/);
+  assert.match(await readFile(join(output, "README.md"), "utf8"), /existing mcp.servers.skillar/);
   await assert.rejects(prepareExisting(output), { code: "EEXIST" });
   assert.equal(await readFile(config, "utf8"), before);
   assert.ok((await readdir(output)).includes("skills"));
@@ -71,14 +71,14 @@ test("existing-MCP bundle adds guidance without replacing transport or credentia
 test("bundle declares only its loader, bootstrap hook and read-only OAuth bridge", async () => {
   const manifest = JSON.parse(await readFile(join(bundle, ".codex-plugin/plugin.json"), "utf8"));
   const mcp = JSON.parse(await readFile(join(bundle, ".mcp.json"), "utf8"));
-  assert.equal(manifest.name, "gisul-openclaw");
+  assert.equal(manifest.name, "skillar-openclaw");
   assert.equal(manifest.hooks, "./hooks/");
-  assert.deepEqual(Object.keys(mcp.mcpServers), ["gisul"]);
-  assert.deepEqual(mcp.mcpServers.gisul.args, ["${CLAUDE_PLUGIN_ROOT}/scripts/bridge.mjs"]);
-  assert.throws(() => bridgePlan({ stateDir: "/profile with spaces" }, {}), /Configure a Gisul endpoint/);
-  const normal = bridgePlan({ stateDir: "/profile with spaces" }, { GISUL_MCP_URL: "https://fixture.example/mcp" });
-  const login = bridgePlan({ stateDir: "/profile with spaces", login: true }, { GISUL_MCP_URL: "https://fixture.example/mcp" });
-  assert.equal(normal.env.MCP_REMOTE_CONFIG_DIR, "/profile with spaces/gisul/auth");
+  assert.deepEqual(Object.keys(mcp.mcpServers), ["skillar"]);
+  assert.deepEqual(mcp.mcpServers.skillar.args, ["${CLAUDE_PLUGIN_ROOT}/scripts/bridge.mjs"]);
+  assert.throws(() => bridgePlan({ stateDir: "/profile with spaces" }, {}), /Configure a Skillar endpoint/);
+  const normal = bridgePlan({ stateDir: "/profile with spaces" }, { SKILLAR_MCP_URL: "https://fixture.example/mcp" });
+  const login = bridgePlan({ stateDir: "/profile with spaces", login: true }, { SKILLAR_MCP_URL: "https://fixture.example/mcp" });
+  assert.equal(normal.env.MCP_REMOTE_CONFIG_DIR, "/profile with spaces/skillar/auth");
   assert.deepEqual(normal.env, login.env);
   assert.deepEqual(normal.args.slice(2), login.args.slice(3));
   assert.equal(JSON.parse(normal.args.at(-1)).scope, "skills:read");
@@ -88,7 +88,7 @@ test("bundle declares only its loader, bootstrap hook and read-only OAuth bridge
 });
 
 test("credentials follow a copied install, explicit state override or source profile", () => {
-  const installed = "/profiles/team/extensions/gisul-openclaw/scripts/bridge.mjs";
+  const installed = "/profiles/team/extensions/skillar-openclaw/scripts/bridge.mjs";
   assert.equal(resolveStateDir({}, { OPENCLAW_STATE_DIR: "/other" }, "/user", installed), "/profiles/team");
   assert.equal(resolveStateDir({ stateDir: "/explicit" }, {}, "/user", installed), "/explicit");
   assert.equal(resolveStateDir({}, { OPENCLAW_PROFILE: "qa" }, "/user", "/source/scripts/bridge.mjs"), "/user/.openclaw-qa");
@@ -102,7 +102,7 @@ test("bootstrap preserves existing instructions and cached objects without dupli
   hook(event);
   assert.equal(original.content, "Existing rules");
   const first = event.context.bootstrapFiles[0].content;
-  assert.ok(first.startsWith("Existing rules\n\n<gisul-discovery>"));
+  assert.ok(first.startsWith("Existing rules\n\n<skillar-discovery>"));
   hook(event);
   assert.equal(event.context.bootstrapFiles[0].content, first);
   const unrelated = { ...event, type: "message", context: { bootstrapFiles: [] } };
@@ -120,19 +120,19 @@ test("bootstrap preserves existing instructions and cached objects without dupli
 test("dry run creates no auth state; subprocess keeps stdout protocol-clean and failure status", async t => {
   const root = await fixture(t);
   const state = join(root, "state");
-  const dry = await execute(["--state-dir", state, "--dry-run"], { GISUL_MCP_URL: "https://fixture.example/mcp" });
+  const dry = await execute(["--state-dir", state, "--dry-run"], { SKILLAR_MCP_URL: "https://fixture.example/mcp" });
   assert.equal(dry.code, 0);
-  assert.equal(JSON.parse(dry.stdout).env.MCP_REMOTE_CONFIG_DIR, join(state, "gisul/auth"));
+  assert.equal(JSON.parse(dry.stdout).env.MCP_REMOTE_CONFIG_DIR, join(state, "skillar/auth"));
   await assert.rejects(access(state), { code: "ENOENT" });
   const bin = join(root, "bin");
   await mkdir(bin);
   const npx = join(bin, "npx");
-  await writeFile(npx, `#!${process.execPath}\nprocess.stderr.write('fixture bridge diagnostic\\n');\nprocess.stdin.pipe(process.stdout);\nprocess.stdin.on('end', () => { process.exitCode = Number(process.env.GISUL_TEST_EXIT || 0); });\n`);
+  await writeFile(npx, `#!${process.execPath}\nprocess.stderr.write('fixture bridge diagnostic\\n');\nprocess.stdin.pipe(process.stdout);\nprocess.stdin.on('end', () => { process.exitCode = Number(process.env.SKILLAR_TEST_EXIT || 0); });\n`);
   await chmod(npx, 0o700);
   const input = '{"jsonrpc":"2.0","id":1,"method":"initialize"}\n';
-  const result = await execute(["--state-dir", state], { PATH: bin + delimiter + process.env.PATH, GISUL_TEST_EXIT: "7", GISUL_MCP_URL: "https://fixture.example/mcp" }, input);
+  const result = await execute(["--state-dir", state], { PATH: bin + delimiter + process.env.PATH, SKILLAR_TEST_EXIT: "7", SKILLAR_MCP_URL: "https://fixture.example/mcp" }, input);
   assert.equal(result.code, 7);
   assert.equal(result.stdout, input);
   assert.match(result.stderr, /fixture bridge diagnostic/);
-  assert.equal((await stat(join(state, "gisul/auth"))).mode & 0o777, 0o700);
+  assert.equal((await stat(join(state, "skillar/auth"))).mode & 0o777, 0o700);
 });

@@ -4,11 +4,11 @@ import { createHash } from 'node:crypto';
 import { skillWrite } from '../src/skill-writer.ts';
 const md = '---\nname: demo\ndescription: Demo\n---\nRead [guide](references/guide.md).\n';
 const hash = value => `sha256:${createHash('sha256').update(value).digest('hex')}`;
-const before = 'a'.repeat(40), after = 'b'.repeat(40), uri = 'skill://gisul/gisul/demo/SKILL.md';
+const before = 'a'.repeat(40), after = 'b'.repeat(40), uri = 'skill://skillar/iyen/demo/SKILL.md';
 function fixture({ existing = false, conflict = false, lost = false } = {}) {
   let head = before;
   const calls = [];
-  const env = { GISUL_GITHUB_TOKEN: 'fixture', SKILLS_BUCKET: { get: async () => null } };
+  const env = { SKILLAR_GITHUB_TOKEN: 'fixture', SKILLS_BUCKET: { get: async () => null } };
   const git = async (path, method = 'GET', body) => {
     calls.push({ path, method, body });
     if (path === '/git/ref/heads/main') return { object: { sha: head } };

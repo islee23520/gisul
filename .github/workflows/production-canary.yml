@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   canary:
-    if: github.event_name == 'workflow_dispatch' || vars.GISUL_CANARY_ENABLED == 'true'
+    if: github.event_name == 'workflow_dispatch' || (vars.SKILLAR_CANARY_ENABLED == 'true' || vars.GISUL_CANARY_ENABLED == 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -21,12 +21,12 @@ jobs:
       - name: Check expected runtime and immutable content
         run: node scripts/production-canary.mjs
         env:
-          GISUL_CANARY_MCP_URL: ${{ vars.GISUL_CANARY_MCP_URL }}
-          GISUL_CANARY_EXPECTED_RUNTIME: ${{ vars.GISUL_CANARY_EXPECTED_RUNTIME }}
-          GISUL_CANARY_INVENTORY_URL: ${{ vars.GISUL_CANARY_INVENTORY_URL }}
-          GISUL_CANARY_INVENTORY_SHA256: ${{ vars.GISUL_CANARY_INVENTORY_SHA256 }}
-          GISUL_CANARY_READER_TOKEN: ${{ secrets.GISUL_CANARY_READER_TOKEN }}
-          GISUL_CANARY_INVENTORY_TOKEN: ${{ secrets.GISUL_CANARY_INVENTORY_TOKEN }}
+          SKILLAR_CANARY_MCP_URL: ${{ vars.SKILLAR_CANARY_MCP_URL || vars.GISUL_CANARY_MCP_URL }}
+          SKILLAR_CANARY_EXPECTED_RUNTIME: ${{ vars.SKILLAR_CANARY_EXPECTED_RUNTIME || vars.GISUL_CANARY_EXPECTED_RUNTIME }}
+          SKILLAR_CANARY_INVENTORY_URL: ${{ vars.SKILLAR_CANARY_INVENTORY_URL || vars.GISUL_CANARY_INVENTORY_URL }}
+          SKILLAR_CANARY_INVENTORY_SHA256: ${{ vars.SKILLAR_CANARY_INVENTORY_SHA256 || vars.GISUL_CANARY_INVENTORY_SHA256 }}
+          SKILLAR_CANARY_READER_TOKEN: ${{ secrets.SKILLAR_CANARY_READER_TOKEN || secrets.GISUL_CANARY_READER_TOKEN }}
+          SKILLAR_CANARY_INVENTORY_TOKEN: ${{ secrets.SKILLAR_CANARY_INVENTORY_TOKEN || secrets.GISUL_CANARY_INVENTORY_TOKEN }}
       - name: Retain canary receipt
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

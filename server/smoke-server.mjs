@@ -9,10 +9,10 @@ import { NegotiatingTransport, protocolFetch } from "./dist/protocol.js";
 
 const parse = result => { assert.ok(!result.isError, JSON.stringify(result.content)); return JSON.parse(result.content[0].text); };
 export async function smokeServer({ root, env = process.env, httpUrl }) {
-  const upstream = new Client({ name: "gisul-deploy-smoke", version: "1" });
-  const bridge = new Client({ name: "gisul-deploy-bridge-smoke", version: "1" });
-  const http = new Client({ name: "gisul-deploy-http-smoke", version: "1" });
-  const legacy = new Client({ name: "gisul-legacy-smoke", version: "1" });
+  const upstream = new Client({ name: "skillar-deploy-smoke", version: "1" });
+  const bridge = new Client({ name: "skillar-deploy-bridge-smoke", version: "1" });
+  const http = new Client({ name: "skillar-deploy-http-smoke", version: "1" });
+  const legacy = new Client({ name: "skillar-legacy-smoke", version: "1" });
   const transports = [];
   const transport = args => {
     const result = new StdioClientTransport({ command: process.execPath, args, env, stderr: "pipe", maxBufferSize: 32 * 1024 * 1024 });
@@ -40,7 +40,7 @@ export async function smokeServer({ root, env = process.env, httpUrl }) {
     const reread = parse(await bridge.callTool({ name: "read_skill_file", arguments: { skill_uri: loaded.uri, uri: loaded.uri } }));
     assert.equal(loaded.markdown, reread.text);
     if (httpUrl) {
-      const token = env.GISUL_BEARER_TOKEN ?? (env.GISUL_BEARER_TOKEN_FILE ? (await readFile(env.GISUL_BEARER_TOKEN_FILE, "utf8")).trim() : undefined);
+      const token = (env.SKILLAR_BEARER_TOKEN ?? env.GISUL_BEARER_TOKEN) ?? ((env.SKILLAR_BEARER_TOKEN_FILE ?? env.GISUL_BEARER_TOKEN_FILE) ? (await readFile((env.SKILLAR_BEARER_TOKEN_FILE ?? env.GISUL_BEARER_TOKEN_FILE), "utf8")).trim() : undefined);
       const modernHttp = new NegotiatingTransport(new StreamableHTTPClientTransport(new URL(httpUrl), { fetch: protocolFetch, requestInit: token ? { headers: { Authorization: `Bearer ${token}` } } : undefined }));
       await http.connect(modernHttp);
       assert.equal(modernHttp.modern, true, "HTTP must also support modern discovery");

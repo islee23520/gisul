@@ -9,7 +9,7 @@ export const CACHE_METHODS = new Set(["server/discover", "skills/list", "skills/
 export const cacheHints = { ttlMs: 30_000, cacheScope: "private" as const };
 const isObject = (value: unknown): value is Record<string, unknown> => !!value && typeof value === "object" && !Array.isArray(value);
 export function modernParams(params: Record<string, unknown> = {}) {
-  return { ...params, _meta: { ...(isObject(params._meta) ? params._meta : {}), [VERSION_KEY]: MODERN_VERSION, [CAPS_KEY]: {}, "io.modelcontextprotocol/clientInfo": { name: "gisul-codex-reader", version: "0.1.0" } } };
+  return { ...params, _meta: { ...(isObject(params._meta) ? params._meta : {}), [VERSION_KEY]: MODERN_VERSION, [CAPS_KEY]: {}, "io.modelcontextprotocol/clientInfo": { name: "skillar-codex-reader", version: "0.2.0" } } };
 }
 export function modernError(message: JSONRPCRequest) {
   const meta = message.params?._meta;
@@ -48,7 +48,7 @@ export class ServerProtocolTransport implements Transport {
       const request = this.requests.get(message.id!);
       this.requests.delete(message.id!);
       if (request && "result" in message) {
-        message = { ...message, result: { ...message.result, resultType: "complete", ...(CACHE_METHODS.has(request.method) ? cacheHints : {}), ...(request.modern ? { _meta: { ...message.result._meta, "io.modelcontextprotocol/serverInfo": { name: "gisul", version: "0.1.0" } } } : {}) } };
+        message = { ...message, result: { ...message.result, resultType: "complete", ...(CACHE_METHODS.has(request.method) ? cacheHints : {}), ...(request.modern ? { _meta: { ...message.result._meta, "io.modelcontextprotocol/serverInfo": { name: "skillar", version: "0.2.0" } } } : {}) } };
       }
     }
     await this.inner.send(message, options);
@@ -64,7 +64,7 @@ export class NegotiatingTransport implements Transport {
   private probe?: JSONRPCRequest;
   private timer?: ReturnType<typeof setTimeout>;
   private pending = new Map<string | number, string>();
-  private probeId = "gisul-discovery-probe";
+  private probeId = "skillar-discovery-probe";
   constructor(private inner: Transport, private timeoutMs = 5000) {}
   async start() {
     this.inner.onclose = () => { clearTimeout(this.timer); this.onclose?.(); };
@@ -89,7 +89,7 @@ export class NegotiatingTransport implements Transport {
         this.modern = true;
         this.inner.setProtocolVersion?.(MODERN_VERSION);
         // Synthetic legacy result is local to the SDK, never sent over the wire.
-        this.onmessage?.({ jsonrpc: "2.0", id: init.id, result: { protocolVersion: "2025-11-25", capabilities: message.result.capabilities, serverInfo: message.result._meta?.["io.modelcontextprotocol/serverInfo"] ?? { name: "gisul-upstream", version: "unknown" }, instructions: message.result.instructions } });
+        this.onmessage?.({ jsonrpc: "2.0", id: init.id, result: { protocolVersion: "2025-11-25", capabilities: message.result.capabilities, serverInfo: message.result._meta?.["io.modelcontextprotocol/serverInfo"] ?? { name: "skillar-upstream", version: "unknown" }, instructions: message.result.instructions } });
         return;
       }
       if ("id" in message) {

@@ -10,7 +10,7 @@ import { publishRelease } from '../src/release-publisher.ts';
 import { readCurrent } from '../src/r2-objects.ts';
 import { serveMcp } from '../src/direct.ts';
 const hash = v => `sha256:${createHash('sha256').update(v).digest('hex')}`;
-const uri = name => `skill://gisul/gisul/${name}/SKILL.md`;
+const uri = name => `skill://skillar/iyen/${name}/SKILL.md`;
 const member = (name, phase, selection = 'required', when = name) => ({ uri: uri(name), phase, selection, when });
 const definition = (name = 'backend-pack', investigator = 'backend') => ({ schema_version: 1, kind: 'skill-pack', name, display_name: name, description: `${name} review pack`, scope: 'bounded review', members: [member('scope','scope'), member(investigator,'investigate'), member('tests','investigate','when_applicable',name+' scenarios'), member('verify','verify'), member('explain','explain','when_requested')] });
 async function fixture(t) {
@@ -62,7 +62,7 @@ test('native discovery and combined resolution are body-lazy, deduplicated, cond
 
 test('invalid closure, missing required roles and corrupt pack bytes cannot replace the active release',async t=>{
  const {bucket}=await fixture(t),a=await stage(bucket,'a');await promote(bucket,a,1);
- for(const edit of [d=>d.members.push(d.members[0]),d=>d.members[0].selection='when_applicable',d=>d.members[1].uri=uri('missing'),d=>d.members[1].uri='skill://evil/gisul/backend/SKILL.md',d=>d.members[1].uri='pack://gisul/gisul/other']){
+ for(const edit of [d=>d.members.push(d.members[0]),d=>d.members[0].selection='when_applicable',d=>d.members[1].uri=uri('missing'),d=>d.members[1].uri='skill://evil/skillar/backend/SKILL.md',d=>d.members[1].uri='pack://skillar/iyen/other']){
    const d=definition();edit(d);assert.throws(()=>validatePack(d,new Set(['scope','backend','tests','verify','explain'].map(uri))));
  }
  const bad=definition();bad.members[1].uri=uri('missing');const b=await stage(bucket,'b',[bad]);
@@ -85,11 +85,11 @@ test('combined incompatible entry roles fail and old skill-only catalogs remain 
 
 function gitFixture({existing=false,missing=false,conflict=false,lost=false}={}) {
  let head='a'.repeat(40);const calls=[];const d=definition();const content=JSON.stringify(d,null,2)+'\n';
- const env={GISUL_GITHUB_TOKEN:'fixture',SKILLS_BUCKET:{get:async()=>null}};
+ const env={SKILLAR_GITHUB_TOKEN:'fixture',SKILLS_BUCKET:{get:async()=>null}};
  const git=async(path,method='GET',body)=>{calls.push({path,method,body});
  if(path==='/git/ref/heads/main')return{object:{sha:head}};
  if(path===`/git/commits/${'a'.repeat(40)}`)return{tree:{sha:'old'}};
- if(path==='/git/trees/old?recursive=1')return{tree:[...(existing?[{path:'packs/backend-pack.json',type:'blob',mode:'100644',sha:'pack'}]:[]),...d.members.filter(m=>!missing||m.phase!=='investigate').map(m=>({path:`skills/${m.uri.slice('skill://gisul/gisul/'.length)}`,type:'blob',mode:'100644',sha:m.uri.split('/').at(-2)}))]};
+ if(path==='/git/trees/old?recursive=1')return{tree:[...(existing?[{path:'packs/backend-pack.json',type:'blob',mode:'100644',sha:'pack'}]:[]),...d.members.filter(m=>!missing||m.phase!=='investigate').map(m=>({path:`skills/${m.uri.slice('skill://skillar/iyen/'.length)}`,type:'blob',mode:'100644',sha:m.uri.split('/').at(-2)}))]};
  if(path==='/git/blobs/pack')return{encoding:'base64',content:Buffer.from(content).toString('base64')};
  if(path.startsWith('/git/blobs/')){const name=path.split('/').at(-1);return{encoding:'base64',content:Buffer.from(`---\nname: ${name}\ndescription: Fixture\n---\nBody`).toString('base64')};}
  if(path==='/git/trees')return{sha:'new'};if(path==='/git/commits')return{sha:'b'.repeat(40)};
@@ -110,7 +110,7 @@ test('pack writes create/update exact Git bytes with stale-digest, reference and
 
 test('Codex MCP exposes native pack tools with reader/writer authorization and active readback',async t=>{
  const {bucket}=await fixture(t),a=await stage(bucket,'a');await promote(bucket,a,1);
- const env={SKILLS_BUCKET:bucket,GISUL_BEARER_TOKEN:'read',GISUL_WRITE_TOKEN:'write',GISUL_GITHUB_TOKEN:'fixture',GISUL_NATIVE_TOOLS:'true'};
+ const env={SKILLS_BUCKET:bucket,SKILLAR_BEARER_TOKEN:'read',SKILLAR_WRITE_TOKEN:'write',SKILLAR_GITHUB_TOKEN:'fixture',SKILLAR_NATIVE_TOOLS:'true'};
  const rpc=async(method,params={},token='read')=>serveMcp(new Request('https://fixture/mcp',{method:'POST',headers:{'content-type':'application/json',authorization:`Bearer ${token}`},body:JSON.stringify({jsonrpc:'2.0',id:1,method,params})}),env);
  const names=(await (await rpc('tools/list')).json()).result.tools.map(t=>t.name);assert.ok(names.includes('search_packs')&&names.includes('load_pack'));assert.ok(!names.includes('create_pack'));
  const writes=(await (await rpc('tools/list',{},'write')).json()).result.tools.map(t=>t.name);for(const n of ['create_pack','update_pack','get_pack_write_status'])assert.ok(writes.includes(n));

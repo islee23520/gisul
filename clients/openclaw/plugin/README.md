@@ -1,32 +1,32 @@
-# Gisul for OpenClaw
+# Skillar for OpenClaw
 
-This bundle adds the `gisul` skill, an `agent:bootstrap` discovery hook and a
-Gisul MCP connection. It requests only `skills:read`. Selected workflow bodies
+This bundle adds the `skillar` skill, an `agent:bootstrap` discovery hook and a
+Skillar MCP connection. It requests only `skills:read`. Selected workflow bodies
 and supporting files are read from immutable remote releases; the catalog is
 never copied into the plugin or your workspace.
 
 ## Install and sign in
 
-Use Node 24+, npm/npx and OpenClaw on macOS or Linux. From the Gisul checkout:
+Use Node 24+, npm/npx and OpenClaw on macOS or Linux. From the Skillar checkout:
 
 ```sh
-node clients/openclaw/prepare-oauth.mjs --output /new/gisul-bundle --endpoint https://your-host.example/mcp
-openclaw plugins install /new/gisul-bundle
-node "$HOME/.openclaw/extensions/gisul-openclaw/scripts/bridge.mjs" --login
+node clients/openclaw/prepare-oauth.mjs --output /new/skillar-bundle --endpoint https://your-host.example/mcp
+openclaw plugins install /new/skillar-bundle
+node "$HOME/.openclaw/extensions/skillar-openclaw/scripts/bridge.mjs" --login
 ```
 
 The login command in the installed bundle downloads the pinned `mcp-remote@0.14.3` package if necessary, opens browser OAuth for a GitHub account allowed by the configured deployment, and lists the remote MCP tools. Complete sign-in before starting the agent. Credentials stay in
-`<OpenClaw state directory>/gisul/auth`, outside the replaceable plugin folder.
+`<OpenClaw state directory>/skillar/auth`, outside the replaceable plugin folder.
 No credentials are copied from Codex or embedded in the plugin.
 
-The selected endpoint is stored in `gisul-client.json`; login and runtime both use it. `--endpoint` overrides the URL for a single invocation; prefer a prepared bundle for a permanent installation.
+The selected endpoint is stored in `skillar-client.json`; login and runtime both use it. `--endpoint` overrides the URL for a single invocation; prefer a prepared bundle for a permanent installation.
 
 For a named profile, keep installation, sign-in and the Gateway together:
 
 ```sh
-openclaw --profile team plugins install /new/gisul-bundle
-node "$HOME/.openclaw-team/extensions/gisul-openclaw/scripts/bridge.mjs" --login
-openclaw --profile team plugins inspect gisul-openclaw
+openclaw --profile team plugins install /new/skillar-bundle
+node "$HOME/.openclaw-team/extensions/skillar-openclaw/scripts/bridge.mjs" --login
+openclaw --profile team plugins inspect skillar-openclaw
 ```
 
 For `OPENCLAW_STATE_DIR`, use that profile's actual installed script path.
@@ -43,16 +43,16 @@ installation result. Installation is not proof of sign-in or remote tool access.
 
 ## Use and inspect
 
-Ask: “Gisul에서 이 작업에 맞는 스킬을 찾아 적용해줘.”
+Ask: “Skillar에서 이 작업에 맞는 스킬을 찾아 적용해줘.”
 
-The embedded agent normally sees `gisul__search_skills`, `gisul__load_skill` and
-`gisul__read_skill_file`. The loader keeps searches/loads pinned to the returned
+The embedded agent normally sees `skillar__search_skills`, `skillar__load_skill` and
+`skillar__read_skill_file`. The loader keeps searches/loads pinned to the returned
 commit, checks `invocation: explicit` separately from relevance, and passes the
 loaded `load_id` into supporting-file reads. Search results alone do not activate
 skills or grant permission to execute their instructions.
 
 ```sh
-openclaw plugins inspect gisul-openclaw --json
+openclaw plugins inspect skillar-openclaw --json
 openclaw skills list --json
 openclaw hooks list --json
 ```
@@ -60,11 +60,11 @@ openclaw hooks list --json
 The bootstrap hook appends discovery guidance to the in-memory `AGENTS.md`
 entry while preserving existing content. It does not edit workspace files or
 perform network requests itself. Internal hooks must be enabled by your
-OpenClaw configuration for automatic guidance; if disabled, invoke the `gisul`
+OpenClaw configuration for automatic guidance; if disabled, invoke the `skillar`
 skill explicitly. Model adherence is not guaranteed.
 
 Existing `plugins.allow`, `hooks.internal`, skill filters and tool policies
-continue to apply. If a plugin allowlist is configured, include `gisul-openclaw`
+continue to apply. If a plugin allowlist is configured, include `skillar-openclaw`
 through your normal configuration process while preserving other entries.
 The `coding` and `messaging` profiles support bundle MCP tools; a `bundle-mcp`
 denial or workspace MCP override can hide them. Diagnose the relevant policy
@@ -84,11 +84,11 @@ these instructions do not use `--force`. Inspect the existing installation and
 follow your OpenClaw version's supported update commands.
 
 ```sh
-openclaw plugins uninstall gisul-openclaw
+openclaw plugins uninstall skillar-openclaw
 ```
 
 Use the same profile/state directory as installation. The OAuth cache is
-separate; delete only that profile's `gisul/auth` directory if you also intend
+separate; delete only that profile's `skillar/auth` directory if you also intend
 to discard its login. Leave unrelated plugins, settings and workspace files.
 
 This uses OpenClaw's supported Codex-compatible bundle format, not the Codex

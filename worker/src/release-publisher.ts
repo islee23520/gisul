@@ -5,7 +5,7 @@ import type { CurrentRelease, ReleaseIdentity } from "./r2-objects.ts";
 import { manifestDigest, parseInventory, readInventory, readSnapshot } from "./release-reader.ts";
 
 export type PublishRequest = ReleaseIdentity & { expected_etag: string | null; sequence: number };
-export type PublisherEnv = { SKILLS_BUCKET: R2Bucket; GISUL_PUBLISH_TOKEN?: string };
+export type PublisherEnv = { SKILLS_BUCKET: R2Bucket; SKILLAR_PUBLISH_TOKEN?: string; GISUL_PUBLISH_TOKEN?: string };
 
 function equalMetadata(a: unknown, b: unknown): boolean {
   if (Object.is(a, b)) return true;
@@ -50,8 +50,9 @@ export async function publishRelease(bucket: R2Bucket, input: PublishRequest, op
 }
 
 export async function publisherFetch(request: Request, env: PublisherEnv): Promise<Response> {
-  if (!env.GISUL_PUBLISH_TOKEN) return jsonResponse(request, { error: "Release publishing is not configured" }, 503);
-  if (!await validBearer(request, env.GISUL_PUBLISH_TOKEN)) return jsonResponse(request, { error: "Unauthorized" }, 401, { "www-authenticate": "Bearer" });
+  const token = env.SKILLAR_PUBLISH_TOKEN ?? env.GISUL_PUBLISH_TOKEN;
+  if (!token) return jsonResponse(request, { error: "Release publishing is not configured" }, 503);
+  if (!await validBearer(request, token)) return jsonResponse(request, { error: "Unauthorized" }, 401, { "www-authenticate": "Bearer" });
   const url = new URL(request.url);
   try {
     if (url.pathname === "/admin/current" && request.method === "GET") {

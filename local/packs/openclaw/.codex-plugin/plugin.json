@@ -1,0 +1,11 @@
+{
+  "name": "skillar",
+  "version": "0.1.0",
+  "description": "Capture OpenClaw prompts and expose the local skillar skill router.",
+  "author": {
+    "name": "ARKPOINT"
+  },
+  "hooks": "./hooks/",
+  "mcpServers": "./.mcp.json",
+  "license": "MIT"
+}

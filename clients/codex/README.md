@@ -2,13 +2,13 @@
 
 **Team OAuth installation:** use the [native HTTPS plugin](../../docs/team-plugin.md). It has no local adapter, Node or SSH dependency. The instructions below describe the retained personal/legacy adapter, which is a separate deployment path.
 
-Gisul's Codex adapter exposes `search_skills`, `load_skill`, `read_skill_file`,
-`create_skill`, and `update_skill`. A small local `$gisul` skill teaches Codex when and how to use
+Skillar's Codex adapter exposes `search_skills`, `load_skill`, `read_skill_file`,
+`create_skill`, and `update_skill`. A small local `$skillar` skill teaches Codex when and how to use
 them. Remote skills stay remote; the catalog is not copied into local skill folders.
 
 ## Plugin setup
 
-The plugin source is `plugin/gisul/`. Its manifest bundles the local loader and
+The plugin source is `plugin/skillar/`. Its manifest bundles the local loader and
 an MCP server configuration; the adapter and its npm dependencies are bundled
 into a single JavaScript file. The installed plugin does not depend on this
 checkout or its `node_modules`. It requires Node 22+ and either an authenticated
@@ -22,18 +22,18 @@ npm ci
 npm run build:codex-plugin
 ```
 
-Publish the built `clients/codex/plugin/gisul/` directory through a Codex local
-marketplace. In this personal setup, the source is `~/plugins/gisul` and the
+Publish the built `clients/codex/plugin/skillar/` directory through a Codex local
+marketplace. In this personal setup, the source is `~/plugins/skillar` and the
 marketplace is `~/.agents/plugins/marketplace.json`. Install using:
 
 ```bash
-codex plugin add gisul@personal
+codex plugin add skillar@personal
 ```
 
-Start a new Codex thread and select the Gisul skill or ask:
+Start a new Codex thread and select the Skillar skill or ask:
 
 ```text
-Gisul에서 코드 리뷰에 맞는 스킬을 찾아 적용해줘.
+Skillar에서 코드 리뷰에 맞는 스킬을 찾아 적용해줘.
 ```
 
 For another SSH host, edit both the origin label and SSH host in the plugin's
@@ -49,7 +49,7 @@ node clients/codex/install.mjs --plugin macmini
 
 The installer discovers the source through `codex plugin list`, rebuilds the
 bundle, uses the plugin-creator helpers to validate the marketplace and update
-the version cachebuster, and runs `codex plugin add gisul@<marketplace>`. It keeps
+the version cachebuster, and runs `codex plugin add skillar@<marketplace>`. It keeps
 a source backup beside the existing plugin. It then checks the selected version,
 enabled state, exact cache file bytes, and fresh MCP discovery/pagination/reads.
 Cache, `config.toml`, and marketplace files are managed by Codex's CLI. New
@@ -63,10 +63,10 @@ local file outside the plugin and repository (owner-readable only):
 ```sh
 node clients/codex/install.mjs --plugin --dry-run \
   --http-url https://YOUR_WORKER.workers.dev/mcp \
-  --bearer-token-file /absolute/private/path/gisul-token
+  --bearer-token-file /absolute/private/path/skillar-token
 node clients/codex/install.mjs --plugin \
   --http-url https://YOUR_WORKER.workers.dev/mcp \
-  --bearer-token-file /absolute/private/path/gisul-token
+  --bearer-token-file /absolute/private/path/skillar-token
 ```
 
 The installed adapter uses Streamable HTTP upstream and starts no SSH process.
@@ -82,7 +82,7 @@ plugin. The [deployment guide](../../docs/deployment.md) describes those gates.
 
 This update path requires an existing local source in the default personal
 marketplace and the plugin-creator skill at
-`${CODEX_HOME:-~/.codex}/skills/.system/plugin-creator`. Set `GISUL_PLUGIN_CREATOR`
+`${CODEX_HOME:-~/.codex}/skills/.system/plugin-creator`. Set `SKILLAR_PLUGIN_CREATOR`
 if that skill is elsewhere. It refuses a competing standalone MCP registration.
 After an ambiguous install failure it re-queries the selected version before
 reporting an error; inspect that result and the printed backup before retrying.
@@ -91,7 +91,7 @@ Check the actual installed bundle and upstream together:
 
 ```bash
 cd server
-node smoke-codex-plugin.mjs /absolute/path/to/installed/gisul
+node smoke-codex-plugin.mjs /absolute/path/to/installed/skillar
 ```
 
 This checks discovery, selected-skill loading, and digest-verified reads without
@@ -114,15 +114,15 @@ node clients/codex/install.mjs macmini
 ```
 
 The installer registers a local adapter with `codex mcp add` and installs only the
-loader in `${CODEX_HOME:-$HOME/.codex}/skills/gisul`. It uses the absolute paths of
+loader in `${CODEX_HOME:-$HOME/.codex}/skills/skillar`. It uses the absolute paths of
 the current Node executable and checkout: keep both available after installation.
-An existing `gisul` registration or different local skill is never overwritten.
+An existing `skillar` registration or different local skill is never overwritten.
 The user-level `.codex/skills` path keeps this loader scoped to Codex's existing
 skill setup rather than the cross-client `.agents/skills` directory.
 
-The upstream host must already support noninteractive `ssh macmini gisul` and run
+The upstream host must already support noninteractive `ssh macmini skillar` and run
 the current server build with the `io.modelcontextprotocol/skills` capability.
-Older tool-only gisul deployments fail with an upgrade message. This installer
+Older tool-only skillar deployments fail with an upgrade message. This installer
 does not deploy the remote server or restart its services. To use another SSH
 alias, replace `macmini` in the install command. SSH uses BatchMode, so configure
 the SSH key and known-host entry before starting Codex.
@@ -130,22 +130,22 @@ the SSH key and known-host entry before starting Codex.
 Start a new Codex session, check `/mcp`, and try:
 
 ```text
-$gisul 찾아서 코드 리뷰에 맞는 스킬을 적용해줘.
+$skillar 찾아서 코드 리뷰에 맞는 스킬을 적용해줘.
 ```
 
 For a known URI:
 
 ```text
-$gisul skill://gisul/agents/my-workflow/SKILL.md를 읽고 이 작업에 적용해줘.
+$skillar skill://skillar/agents/my-workflow/SKILL.md를 읽고 이 작업에 적용해줘.
 ```
 
-Only `$gisul` appears as a local skill. Selection of remote guidance is model-driven;
+Only `$skillar` appears as a local skill. Selection of remote guidance is model-driven;
 this does not modify Codex itself or guarantee automatic selection for every task.
 
 ## Behavior and boundaries
 
 - Search returns compact names, descriptions and exact URIs. Same-named skills remain separate. The loader searches a task subject with `mode: discovery`, checks relevance and invocation policy, and loads only selected results. Legacy mode retains all-literal-word matching and URI order; ranked modes are described below. Search reads all upstream catalog pages before applying `offset` (default 0) and `limit` (default 5, maximum 50).
-- Search responses include `totalMatches`, `offset`, and `limit`. When `nextOffset` is present, pass it as `offset` with the same `query` and `limit` to continue; its absence marks the last page. For example, start with `{"query":"review","limit":50}`, then use `{"query":"review","limit":50,"offset":50}` if `nextOffset` is 50. Catalog pages may be reused within the upstream TTL (30 seconds on gisul); additions or removals between refreshes can shift pages; restart from offset 0 if the catalog changes.
+- Search responses include `totalMatches`, `offset`, and `limit`. When `nextOffset` is present, pass it as `offset` with the same `query` and `limit` to continue; its absence marks the last page. For example, start with `{"query":"review","limit":50}`, then use `{"query":"review","limit":50,"offset":50}` if `nextOffset` is 50. Catalog pages may be reused within the upstream TTL (30 seconds on skillar); additions or removals between refreshes can shift pages; restart from offset 0 if the catalog changes.
 - `offset` must be a nonnegative safe integer and `limit` an integer from 1 to 50; invalid values return an MCP tool error. An offset at or beyond `totalMatches` returns an empty page without `nextOffset`, as does a search with no matches.
 - Load fetches the current manifest and only `SKILL.md`. Every file read checks
   SHA-256 and size. Frontmatter must match the manifest.
@@ -158,7 +158,7 @@ this does not modify Codex itself or guarantee automatic selection for every tas
   directories. `read_skill_file` on a returned directory expands its pinned
   children without reading their bodies. File reads still verify exact bytes.
 - Supporting files are read lazily against the manifest held for this connection.
-  The bridge passes the loaded commit as `params._meta["io.gisul/commit"]` on file
+  The bridge passes the loaded commit as `params._meta["app.skillar/commit"]` on file
   and directory requests. The R2 Worker retains that version across publication
   and rollback; a fresh load uses current. Files outside the manifest and changed
   bytes fail. Upstreams without commit metadata retain digest checks but cannot
@@ -175,8 +175,8 @@ this does not modify Codex itself or guarantee automatic selection for every tas
 ## Event evidence
 
 The bridge appends JSONL events to
-`${CODEX_HOME:-~/.codex}/logs/gisul/events-<YYYYMMDD>.jsonl` (UTC date). Override
-the directory with `GISUL_EVENT_LOG_DIR`, for example in isolated tests. Events
+`${CODEX_HOME:-~/.codex}/logs/skillar/events-<YYYYMMDD>.jsonl` (UTC date). Override
+the directory with `SKILLAR_EVENT_LOG_DIR`, for example in isolated tests. Events
 include connection lifecycle, searches, loads, reads, and classified errors, with
 release/digest, byte count, and duration where available. Skill bodies and bearer
 credentials are not recorded. Logging failure is reported on stderr and does not
@@ -205,9 +205,9 @@ To run the adapter directly against an alternative stdio server:
 node server/dist/codex.js --origin my-server -- /absolute/path/to/server arg1
 ```
 
-To remove the plugin: `codex plugin remove gisul@personal`.
-For the standalone setup, remove the MCP registration with `codex mcp remove gisul`. Remove the installed
-`skills/gisul/SKILL.md` separately if you no longer want the loader.
+To remove the plugin: `codex plugin remove skillar@personal`.
+For the standalone setup, remove the MCP registration with `codex mcp remove skillar`. Remove the installed
+`skills/skillar/SKILL.md` separately if you no longer want the loader.
 
 ## Protocol negotiation and memory cache
 

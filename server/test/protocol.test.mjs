@@ -11,11 +11,11 @@ import { z } from 'zod';
 import { NegotiatingTransport, ResponseCache, MODERN_VERSION, modernParams, encodeHeader, decodeHeader, validateResult } from '../dist/protocol.js';
 
 async function fixture(t) {
-  const root = await mkdtemp(join(tmpdir(), 'gisul-modern-'));
+  const root = await mkdtemp(join(tmpdir(), 'skillar-modern-'));
   await mkdir(join(root,'example'));
   await writeFile(join(root,'example/SKILL.md'), '---\nname: example\ndescription: Protocol fixture\n---\nHello\n');
   t.after(() => rm(root,{recursive:true,force:true}));
-  return new StdioClientTransport({command:process.execPath,args:['dist/index.js'],env:{...process.env,GISUL_SKILL_ROOTS:`fixture=${root}`}});
+  return new StdioClientTransport({command:process.execPath,args:['dist/index.js'],env:{...process.env,SKILLAR_SKILL_ROOTS:`fixture=${root}`}});
 }
 function raw(transport) {
   let id = 0; const pending = new Map();

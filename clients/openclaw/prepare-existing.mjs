@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Prepare a loader-only bundle for hosts that already register mcp.servers.gisul.
+// Prepare a loader-only bundle for hosts that already register mcp.servers.skillar.
 // No OpenClaw config or credentials are read or changed by this build step.
 import { copyFile, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
@@ -11,35 +11,35 @@ export async function prepareExisting(output) {
   // A fresh directory prevents replacing a customized or installed bundle.
   await mkdir(target);
   try {
-    const files = ["package.json", "skills/gisul/SKILL.md", "hooks/gisul-discovery/HOOK.md", "hooks/gisul-discovery/handler.js"];
+    const files = ["package.json", "skills/skillar/SKILL.md", "hooks/skillar-discovery/HOOK.md", "hooks/skillar-discovery/handler.js"];
     for (const name of files) {
       await mkdir(dirname(join(target, name)), { recursive: true });
       await copyFile(join(source, name), join(target, name));
     }
     const manifest = JSON.parse(await readFile(join(source, ".codex-plugin/plugin.json"), "utf8"));
     delete manifest.mcpServers;
-    manifest.description = "Gisul discovery and remote skill loader using the host's existing MCP registration.";
+    manifest.description = "Skillar discovery and remote skill loader using the host's existing MCP registration.";
     await mkdir(join(target, ".codex-plugin"));
     await writeFile(join(target, ".codex-plugin/plugin.json"), JSON.stringify(manifest, null, 2) + "\n");
-    await writeFile(join(target, "gisul-client.json"), JSON.stringify({ mode: "existing-mcp", server: "gisul" }, null, 2) + "\n");
-    await writeFile(join(target, "README.md"), `# Gisul for OpenClaw — existing MCP connection
+    await writeFile(join(target, "skillar-client.json"), JSON.stringify({ mode: "existing-mcp", server: "skillar" }, null, 2) + "\n");
+    await writeFile(join(target, "README.md"), `# Skillar for OpenClaw — existing MCP connection
 
-This bundle installs only the gisul loader and in-memory discovery hook.
+This bundle installs only the skillar loader and in-memory discovery hook.
 It contains no MCP registration, OAuth bridge, token or remote workflow catalog.
-Keep this host's existing mcp.servers.gisul connection, endpoint, authentication,
+Keep this host's existing mcp.servers.skillar connection, endpoint, authentication,
 tool filter and event-log configuration. Follow that connection's own login or
 credential management instructions; do not run the default OAuth bridge login.
 
 Prerequisite: the existing connection exposes search_skills, load_skill and
-read_skill_file. Probe it with openclaw mcp probe gisul --json. Installation does
+read_skill_file. Probe it with openclaw mcp probe skillar --json. Installation does
 not upgrade the remote service or add missing capabilities to an old adapter.
 
 Install this directory with OpenClaw's native plugin manager and inspect
-gisul-openclaw, the gisul skill and the gisul-discovery hook. Existing plugin,
+skillar-openclaw, the skillar skill and the skillar-discovery hook. Existing plugin,
 skill and tool policies still apply. Verify discovery → pinned load → supporting
 file read in a fresh session; catalog inspection alone does not verify calls.
 
-Uninstalling gisul-openclaw removes only the loader/hook. Manage the independently
+Uninstalling skillar-openclaw removes only the loader/hook. Manage the independently
 registered MCP server separately if you intend to change it.
 `);
     return { output: target, mode: "existing-mcp", mcpRegistrationIncluded: false };

@@ -11,9 +11,9 @@ import { fileURLToPath } from "node:url";
 import { createCodexBridge } from "../dist/codex.js";
 
 test("Codex bridge searches metadata, loads exact identity and pins supporting files", async () => {
-  const uri = "skill://gisul/root0/review/SKILL.md";
-  const otherUri = "skill://gisul/root1/review/SKILL.md";
-  const file = "skill://gisul/root0/review/references/guide.md";
+  const uri = "skill://skillar/root0/review/SKILL.md";
+  const otherUri = "skill://skillar/root1/review/SKILL.md";
+  const file = "skill://skillar/root0/review/references/guide.md";
   const markdown = "---\nname: review\ndescription: Team review\n---\nRead references/guide.md.\n";
   const bodies = new Map([[uri, markdown], [file, "Original guide"]]);
   const manifest = () => [...bodies].map(([uri, text]) => ({ uri, size: Buffer.byteLength(text), digest: `sha256:${createHash("sha256").update(text).digest("hex")}` }));
@@ -60,7 +60,7 @@ test("Codex bridge searches metadata, loads exact identity and pins supporting f
 
 test("Codex search exposes every filtered match across upstream and result pages", async () => {
   const entries = Array.from({ length: 125 }, (_, index) => {
-    const uri = `skill://gisul/root${String(index).padStart(3, "0")}/review/SKILL.md`;
+    const uri = `skill://skillar/root${String(index).padStart(3, "0")}/review/SKILL.md`;
     return {
       uri,
       frontmatter: { name: "review", description: index < 123 ? "Team review" : "Other workflow" },
@@ -135,8 +135,8 @@ test("Codex search exposes every filtered match across upstream and result pages
   } finally { await client.close(); await server.close(); }
 });
 
-test("Codex stdio adapter interoperates with the real gisul server", { timeout: 15000 }, async () => {
-  const root = await mkdtemp(join(tmpdir(), "gisul-codex-test-"));
+test("Codex stdio adapter interoperates with the real skillar server", { timeout: 15000 }, async () => {
+  const root = await mkdtemp(join(tmpdir(), "skillar-codex-test-"));
   const client = new Client({ name: "codex-smoke", version: "1" });
   try {
     await mkdir(join(root, "example"));
@@ -144,7 +144,7 @@ test("Codex stdio adapter interoperates with the real gisul server", { timeout: 
     const adapter = fileURLToPath(new URL("../dist/codex.js", import.meta.url));
     const upstream = fileURLToPath(new URL("../dist/index.js", import.meta.url));
     const eventDir = join(root, "events");
-    await client.connect(new StdioClientTransport({ command: process.execPath, args: [adapter, "--origin", "fixture-host", "--", "env", `GISUL_ROOT=${root}`, `GISUL_STATE_DIR=${root}/state`, `GISUL_SKILLS_DIRS=${root}`, process.execPath, upstream], env: { ...process.env, GISUL_EVENT_LOG_DIR: eventDir } }));
+    await client.connect(new StdioClientTransport({ command: process.execPath, args: [adapter, "--origin", "fixture-host", "--", "env", `SKILLAR_ROOT=${root}`, `SKILLAR_STATE_DIR=${root}/state`, `SKILLAR_SKILLS_DIRS=${root}`, process.execPath, upstream], env: { ...process.env, SKILLAR_EVENT_LOG_DIR: eventDir } }));
     const tools = await client.listTools();
     assert.deepEqual(tools.tools.map(tool => tool.name).sort(), ["create_skill", "load_skill", "read_skill_file", "search_skills", "update_skill"]);
     const result = await client.callTool({ name: "search_skills", arguments: { query: "workflow" } });
@@ -176,13 +176,13 @@ test("Codex stdio adapter interoperates with the real gisul server", { timeout: 
     for (const event of ["connect", "search", "load_skill", "error", "disconnect"]) assert.ok(events.some(item => item.event === event), event);
     assert.ok(events.every(event => event.connection_id === first.connection_id));
     assert.ok(events.some(event => event.event === "load_skill" && event.manifest_digest && event.bytes > 0));
-    assert.ok(events.some(event => event.code === "gisul_verification_failed"));
+    assert.ok(events.some(event => event.code === "skillar_verification_failed"));
     assert.ok(!log.includes("Follow the test workflow.") && !log.includes("name: new-flow"), "event logs must not contain skill bodies");
   } finally { await client.close(); await rm(root, { recursive: true, force: true }); }
 });
 
 test("bridge reports release identity, follows explicit aliases, searches keywords, and expands pinned directories", async () => {
-  const uri = "skill://gisul/gisul/delivery/SKILL.md";
+  const uri = "skill://skillar/iyen/delivery/SKILL.md";
   const oldUri = "skill://gisul/codex/delivery/SKILL.md";
   const root = uri.slice(0, -8);
   const markdown = "---\nname: delivery\ndescription: Delivery workflow\nkeywords: [개발, 티켓, implementation]\n---\nRead references when needed.\n";
@@ -223,13 +223,17 @@ test("bridge reports release identity, follows explicit aliases, searches keywor
     assert.equal(data(await call("read_skill_file", { skill_uri: uri, uri: directory.files[0] })).release, meta.release);
     omitChild = true;
     assert.equal(data(await call("read_skill_file", { skill_uri: uri, uri: `${root}references` })).files.length, 25, "directory expansion uses the held manifest, not a live listing");
+    for (const foreign of ["skill://foreign/codex/delivery/SKILL.md", "skill://gisul/untrusted/delivery/SKILL.md"]) {
+      meta = { ...meta, movedFrom: foreign };
+      assert.equal((await call("load_skill", { uri: foreign })).isError, true, "foreign authorities or legacy roots are not migration aliases");
+    }
     meta = { ...meta, movedFrom: "skill://wrong/source/delivery/SKILL.md" };
     assert.equal((await call("load_skill", { uri: oldUri })).isError, true, "an undeclared redirect must fail");
   } finally { await client.close(); await server.close(); }
 });
 
 test("bridge pins each load across promotion, including the first body and directory reads", async t => {
-  const uri = "skill://gisul/gisul/versioned/SKILL.md";
+  const uri = "skill://skillar/iyen/versioned/SKILL.md";
   const root = uri.slice(0, -8);
   const releases = new Map(["a", "b"].map(letter => {
     const commit = letter.repeat(40);
@@ -243,20 +247,20 @@ test("bridge pins each load across promotion, including the first body and direc
   const reads = [];
   const upstream = {
     request: async ({ method, params }) => {
-      const release = releases.get(params._meta?.["io.gisul/commit"] ?? current);
+      const release = releases.get(params._meta?.["app.skillar/commit"] ?? current);
       if (method === "skills/list") return { skills: [release.skill], _meta: release._meta };
       if (method === "skills/get") {
         current = newCommit; // Promotion happens before the bridge reads even SKILL.md.
         return { skill: release.skill, _meta: release._meta };
       }
       if (method === "resources/directory/read") {
-        assert.ok(params._meta?.["io.gisul/commit"], "directory requests must carry the loaded commit");
+        assert.ok(params._meta?.["app.skillar/commit"], "directory requests must carry the loaded commit");
         return { resources: [...release.bodies.keys()].filter(key => key.startsWith(`${params.uri}/`)).map(uri => ({ uri })) };
       }
       throw new Error(method);
     },
     readResource: async params => {
-      const commit = params._meta?.["io.gisul/commit"];
+      const commit = params._meta?.["app.skillar/commit"];
       assert.ok(commit, "body requests must carry the loaded commit");
       reads.push({ commit, uri: params.uri });
       return { contents: [{ uri: params.uri, text: releases.get(commit).bodies.get(params.uri) }] };
@@ -304,13 +308,13 @@ test("bridge pins each load across promotion, including the first body and direc
 });
 
 test("search pins catalog pagination and rejects mixed release evidence", async t => {
-  const uri = "skill://gisul/gisul/flow/SKILL.md";
+  const uri = "skill://skillar/iyen/flow/SKILL.md";
   const entry = { uri, frontmatter: { name: "flow", description: "Flow" }, resources: [{ uri, size: 0, digest: `sha256:${createHash("sha256").update("").digest("hex")}` }] };
   let drift = false;
   const commit = "a".repeat(40);
   const server = createCodexBridge({
     request: async ({ params }) => {
-      if (params.cursor) assert.equal(params._meta["io.gisul/commit"], commit);
+      if (params.cursor) assert.equal(params._meta["app.skillar/commit"], commit);
       return { skills: params.cursor ? [] : [entry], ...(params.cursor ? {} : { nextCursor: "second" }), _meta: { commit: drift && params.cursor ? "b".repeat(40) : commit, release: "20260917.3" } };
     },
     readResource: async () => assert.fail("search reads metadata only"),

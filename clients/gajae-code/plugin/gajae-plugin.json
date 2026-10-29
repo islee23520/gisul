@@ -1,12 +1,12 @@
 {
   "kind": "gajae-code-plugin",
-  "name": "gisul",
+  "name": "skillar",
   "version": "0.1.2",
   "subskills": ["subskills/interview/SKILL.md"],
   "system_appendix": [
-    { "name": "gisul-discovery", "path": "prompts/discovery.md" }
+    { "name": "skillar-discovery", "path": "prompts/discovery.md" }
   ],
   "agent-appendix": [
-    { "agent": "executor", "name": "gisul-execution", "path": "prompts/executor.md" }
+    { "agent": "executor", "name": "skillar-execution", "path": "prompts/executor.md" }
   ]
 }

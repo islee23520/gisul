@@ -18,16 +18,16 @@ import { gajaeTransport, remotePackage } from "../../clients/runtime-install.mjs
 const hash = text => `sha256:${createHash("sha256").update(text).digest("hex")}`;
 const token = "direct-worker-fixture-token";
 const publishToken = "release-publisher-fixture-token";
-const uri = "skill://gisul/gisul/flow/SKILL.md";
+const uri = "skill://skillar/iyen/flow/SKILL.md";
 const root = uri.slice(0, -8);
 const bundle = build({ entryPoints: [fileURLToPath(new URL("../src/index.ts", import.meta.url))], bundle: true, write: false, format: "esm", platform: "browser", target: "es2022", external: ["cloudflare:workers"] });
 
-async function fixture(t, bearer = token, writes = false, outbound, native = false) {
+async function fixture(t, bearer = token, writes = false, outbound, native = false, legacy = false) {
   const modules = { "index.js": { type: "esm", contents: (await bundle).outputFiles[0].text } };
   const runtime = new Miniflare({ telemetry: { enabled: false }, logRequests: false, workers: [{ config: {
     type: "worker", name: "direct-test", compatibilityDate: "2026-09-03",
     manifest: { mainModule: "index.js", modules },
-    env: { GISUL_NATIVE_TOOLS: { type: "text", value: String(native) }, ...(writes ? { GISUL_WRITE_TOKEN: { type: "text", value: "fixture-write-token" }, GISUL_GITHUB_TOKEN: { type: "text", value: "fixture-github-token" } } : {}), SKILLS_BUCKET: { type: "r2", name: "SKILLS_BUCKET" }, GISUL_BEARER_TOKEN: { type: "text", value: bearer }, GISUL_ALLOWED_ORIGINS: { type: "text", value: "https://client.example" }, GISUL_PUBLISH_TOKEN: { type: "text", value: publishToken } }, exports: {},
+    env: Object.fromEntries(Object.entries({ SKILLAR_NATIVE_TOOLS: { type: "text", value: String(native) }, ...(writes ? { SKILLAR_WRITE_TOKEN: { type: "text", value: "fixture-write-token" }, SKILLAR_GITHUB_TOKEN: { type: "text", value: "fixture-github-token" } } : {}), SKILLS_BUCKET: { type: "r2", name: "SKILLS_BUCKET" }, SKILLAR_BEARER_TOKEN: { type: "text", value: bearer }, SKILLAR_ALLOWED_ORIGINS: { type: "text", value: "https://client.example" }, SKILLAR_PUBLISH_TOKEN: { type: "text", value: publishToken } }).map(([key, value]) => [legacy ? key.replace(/^SKILLAR_/, "GISUL_") : key, value])), exports: {},
   }, ...(outbound ? { dev: { outboundService: { type: "fetcher", handler: outbound } } } : {}) }] });
   t.after(() => runtime.dispose());
   const bucket = await runtime.getR2Bucket("SKILLS_BUCKET");
@@ -43,7 +43,9 @@ async function fixture(t, bearer = token, writes = false, outbound, native = fal
   return { runtime, bucket, endpoint, rpc, publish };
 }
 
-async function release(bucket, letter, complete = true) {
+async function release(bucket, letter, complete = true, legacy = false) {
+  const uri = legacy ? "skill://gisul/gisul/flow/SKILL.md" : "skill://skillar/iyen/flow/SKILL.md";
+  const root = uri.slice(0, -8);
   const commit = letter.repeat(40);
   const version = `20260917.${letter === "a" ? 3 : 4}`;
   const markdown = `---\nname: flow\ndescription: R2 workflow\n---\nRelease ${letter}. Read references only when needed.\n`;
@@ -58,7 +60,7 @@ async function release(bucket, letter, complete = true) {
   const metadata = JSON.stringify({ release: version, commit, skills: [{ uri, manifest_digest: hash(JSON.stringify(resources.slice().sort((a, b) => a.uri < b.uri ? -1 : a.uri > b.uri ? 1 : 0))) }] });
   files.push({ path: "release.json", digest: hash(metadata), size: Buffer.byteLength(metadata) });
   await bucket.put(`releases/${commit}/release.json`, metadata);
-  const inventory = { schema_version: 1, commit, release: version, skills: [{ uri, frontmatter: { name: "flow", description: "R2 workflow" }, resources }], files, aliases: { "skill://gisul/codex/flow/SKILL.md": uri } };
+  const inventory = { schema_version: 1, commit, release: version, skills: [{ uri, frontmatter: { name: "flow", description: "R2 workflow" }, resources }], files, aliases: { "skill://skillar/codex/flow/SKILL.md": uri } };
   const inventoryBody = JSON.stringify(inventory);
   const identity = { commit, release: version, inventory_digest: hash(inventoryBody) };
   await bucket.put(`releases/${commit}/inventory.json`, inventoryBody);
@@ -73,7 +75,7 @@ async function activate(bucket, identity, revision) {
 test("native HTTP and GJC's real stdio proxy preserve discovery, load errors, and pinned reads", { timeout: 30000 }, async t => {
   const { bucket, endpoint } = await fixture(t, token, false, undefined, true);
   const a = await release(bucket, "a"), b = await release(bucket, "b");
-  const authDir = await mkdtemp(join(tmpdir(), "gisul-proxy-test-"));
+  const authDir = await mkdtemp(join(tmpdir(), "skillar-proxy-test-"));
   t.after(() => rm(authDir, { recursive: true, force: true }));
   const registration = gajaeTransport(authDir, { GISUL_MCP_URL: "https://fixture.example/mcp" });
   const proxyPackage = JSON.parse(await readFile(new URL("../../server/node_modules/mcp-remote/package.json", import.meta.url), "utf8"));
@@ -85,8 +87,8 @@ test("native HTTP and GJC's real stdio proxy preserve discovery, load errors, an
   const transports = [
     new StreamableHTTPClientTransport(endpoint, { requestInit: { headers: { authorization: `Bearer ${token}` } } }),
     new StdioClientTransport({ command: process.execPath,
-      args: [fileURLToPath(new URL("../../server/node_modules/mcp-remote/dist/proxy.js", import.meta.url)), ...proxyArgs, "--allow-http", "--header", "Authorization: Bearer ${GISUL_FIXTURE_TOKEN}"],
-      env: { ...process.env, ...registration.env, GISUL_FIXTURE_TOKEN: token }, stderr: "pipe",
+      args: [fileURLToPath(new URL("../../server/node_modules/mcp-remote/dist/proxy.js", import.meta.url)), ...proxyArgs, "--allow-http", "--header", "Authorization: Bearer ${SKILLAR_FIXTURE_TOKEN}"],
+      env: { ...process.env, ...registration.env, SKILLAR_FIXTURE_TOKEN: token }, stderr: "pipe",
     }),
   ];
   for (const [index, transport] of transports.entries()) {
@@ -166,7 +168,7 @@ test("real HTTP bridge keeps old bodies and directories pinned while a new conne
   assert.equal(loaded.markdown, a.markdown);
   assert.equal(loaded.commit, a.identity.commit);
   assert.equal(wireReads.length, 1, "load fetches only SKILL.md");
-  assert.equal(wireReads[0].params._meta["io.gisul/commit"], a.identity.commit);
+  assert.equal(wireReads[0].params._meta["app.skillar/commit"], a.identity.commit);
   const second = await connect();
   assert.equal((await second("search_skills", {})).commit, b.identity.commit);
   assert.equal((await second("load_skill", { uri })).markdown, b.markdown);
@@ -197,13 +199,13 @@ test("direct reads reject corrupt bytes, incomplete pins, aliases outside the re
   const { bucket, rpc } = await fixture(t);
   const a = await release(bucket, "a");
   await activate(bucket, a.identity, 1);
-  const alias = await rpc("skills/get", { uri: "skill://gisul/codex/flow/SKILL.md" });
+  const alias = await rpc("skills/get", { uri: "skill://skillar/codex/flow/SKILL.md" });
   assert.equal(alias.body.result.skill.uri, uri);
-  assert.equal(alias.body.result._meta.movedFrom, "skill://gisul/codex/flow/SKILL.md");
-  for (const target of ["skill://gisul/gisul/../private", "skill://gisul/gisul/%2e%2e/private", "skill://other/gisul/flow/SKILL.md", `${uri}?secret=1`]) {
+  assert.equal(alias.body.result._meta.movedFrom, "skill://skillar/codex/flow/SKILL.md");
+  for (const target of ["skill://skillar/iyen/../private", "skill://skillar/iyen/%2e%2e/private", "skill://other/skillar/flow/SKILL.md", `${uri}?secret=1`]) {
     assert.equal((await rpc("resources/read", { uri: target })).body.error.code, -32602);
   }
-  assert.equal((await rpc("skills/get", { uri, _meta: { "io.gisul/commit": "b".repeat(40) } })).body.error.code, -32602);
+  assert.equal((await rpc("skills/get", { uri, _meta: { "app.skillar/commit": "b".repeat(40) } })).body.error.code, -32602);
   await bucket.put(`releases/${a.identity.commit}/skills/flow/references/guide-0.md`, "changed bytes");
   assert.equal((await rpc("resources/read", { uri: `${root}references/guide-0.md` })).body.error.code, -32603);
   await bucket.put(`releases/${a.identity.commit}/inventory.json`, JSON.stringify({ ...a.inventory, release: "made-up" }));
@@ -233,7 +235,7 @@ test("publisher authentication is separate from MCP and uploads cannot forge a c
 test("publication verifies the whole release before switching and rollback preserves the deployment high-water mark", async t => {
   const { bucket, publish, rpc } = await fixture(t);
   const a = await release(bucket, "a", false), b = await release(bucket, "b", false);
-  assert.equal((await rpc("skills/get", { uri, _meta: { "io.gisul/commit": a.identity.commit } })).body.error.code, -32602);
+  assert.equal((await rpc("skills/get", { uri, _meta: { "app.skillar/commit": a.identity.commit } })).body.error.code, -32602);
   assert.equal((await publish(`/admin/releases/${a.identity.commit}`, undefined, "GET")).status, 404);
   const firstInput = { ...a.identity, expected_etag: null, sequence: 1 };
   const initial = await publish("/admin/promote", firstInput);
@@ -293,7 +295,7 @@ test("verified candidates can be read by pin before any current-pointer change",
   assert.equal(checked.status, 200, JSON.stringify(checked));
   assert.deepEqual(checked.body, candidate.identity);
   assert.equal((await publish("/admin/current", undefined, "GET")).body.current, null);
-  const pinned = await rpc("resources/read", { uri, _meta: { "io.gisul/commit": candidate.identity.commit } });
+  const pinned = await rpc("resources/read", { uri, _meta: { "app.skillar/commit": candidate.identity.commit } });
   assert.equal(pinned.body.result.contents[0].text, candidate.markdown);
   assert.equal((await rpc("skills/list")).body.error.code, -32603);
   assert.equal((await publish("/admin/promote", input)).status, 200);
@@ -340,7 +342,7 @@ test("modern Worker validates metadata, emits private cache hints, and preserves
   const listing = await modern("skills/list");
   assert.equal(listing.body.result._meta.commit, a.identity.commit);
   await activate(bucket, b.identity, 2);
-  const pinned = await modern("resources/read", { uri, _meta: { "io.gisul/commit": a.identity.commit } });
+  const pinned = await modern("resources/read", { uri, _meta: { "app.skillar/commit": a.identity.commit } });
   assert.equal(pinned.body.result.contents[0].text, a.markdown);
   assert.equal(pinned.body.result.resultType, "complete");
   assert.equal((await modern("skills/list")).body.result._meta.commit, b.identity.commit);
@@ -377,7 +379,7 @@ test("actual Worker runtime completes GitHub create and update without unsupport
   const requests = [], changes = [];
   const markdown = "---\nname: demo\ndescription: Demo\n---\nRead [guide](references/guide.md).\n";
   const outbound = async request => {
-    const url = new URL(request.url); const path = url.pathname.replace("/repos/changeroa/gisul-skills", "");
+    const url = new URL(request.url); const path = url.pathname.replace("/repos/changeroa/iyen-skills", "");
     assert.equal(url.origin, "https://api.github.com");
     assert.equal(request.headers.get("authorization"), "Bearer fixture-github-token");
     const body = request.method === "GET" ? undefined : await request.json();
@@ -396,7 +398,7 @@ test("actual Worker runtime completes GitHub create and update without unsupport
   const created=await rpc("tools/call",{name:"create_skill",arguments:{name:"demo",markdown,files:{"references/guide.md":"Guide"}}},writer);
   assert.equal(created.body.result.isError,false,JSON.stringify(created.body));
   assert.equal(JSON.parse(created.body.result.content[0].text).status,"accepted");
-  const updated=await rpc("tools/call",{name:"update_skill",arguments:{uri:"skill://gisul/gisul/demo/SKILL.md",markdown:markdown+"Updated",expected_digest:hash(markdown)}},writer);
+  const updated=await rpc("tools/call",{name:"update_skill",arguments:{uri:"skill://skillar/iyen/demo/SKILL.md",markdown:markdown+"Updated",expected_digest:hash(markdown)}},writer);
   assert.equal(updated.body.result.isError,false,JSON.stringify(updated.body));
   assert.equal(saved,markdown+"Updated"); assert.equal(changes[0].length,2); assert.equal(changes[1].length,1);
   assert.equal((await bucket.list()).objects.length,0,"MCP writes cannot bypass publication by modifying R2");
@@ -404,4 +406,19 @@ test("actual Worker runtime completes GitHub create and update without unsupport
   const rejected=await fixture(t,token,true,async()=>{redirects++; return new Response(null,{status:302,headers:{location:"https://other.example"}});});
   const failure=await rejected.rpc("tools/call",{name:"create_skill",arguments:{name:"demo",markdown:markdown.replace("[guide](references/guide.md)","guide")}},writer);
   assert.equal(failure.body.result.isError,true); assert.match(failure.body.result.content[0].text,/302/); assert.equal(redirects,1);
+});
+
+
+test("legacy deployed bindings, immutable inventories and commit pins survive an in-place runtime upgrade", async t => {
+  const f = await fixture(t, token, false, undefined, false, true);
+  const a = await release(f.bucket, "a", true, true), b = await release(f.bucket, "b");
+  await activate(f.bucket, a.identity, 1);
+  const discovered = await f.rpc("initialize", { protocolVersion: "2025-11-25", capabilities: {}, clientInfo: { name: "legacy", version: "1" } });
+  assert.equal(discovered.status, 200);
+  assert.equal(discovered.body.result.serverInfo.name, "skillar");
+  assert.equal((await f.rpc("skills/get", { uri: "skill://gisul/gisul/flow/SKILL.md" })).status, 200);
+  await activate(f.bucket, b.identity, 2);
+  const read = await f.rpc("resources/read", { uri: "skill://gisul/gisul/flow/SKILL.md", _meta: { "io.gisul/commit": a.identity.commit } });
+  assert.equal(read.status, 200);
+  assert.match(read.body.result.contents[0].text, /Release a/);
 });

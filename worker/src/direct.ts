@@ -9,13 +9,21 @@ import { readTools, skillRead } from "./skill-tools.ts";
 
 export interface DirectEnv {
   SKILLS_BUCKET: R2Bucket;
-  GISUL_BEARER_TOKEN: string;
+  SKILLAR_BEARER_TOKEN: string;
+  GISUL_BEARER_TOKEN?: string;
+  SKILLAR_PUBLISH_TOKEN?: string;
   GISUL_PUBLISH_TOKEN?: string;
+  SKILLAR_WRITE_TOKEN?: string;
   GISUL_WRITE_TOKEN?: string;
+  SKILLAR_GITHUB_TOKEN?: string;
   GISUL_GITHUB_TOKEN?: string;
+  SKILLAR_SERVER_VERSION?: string;
   GISUL_SERVER_VERSION?: string;
+  SKILLAR_ALLOWED_ORIGINS?: string;
   GISUL_ALLOWED_ORIGINS?: string;
+  SKILLAR_NATIVE_TOOLS?: string;
   GISUL_NATIVE_TOOLS?: string;
+  SKILLAR_SKILLS_REPOSITORY?: string;
   GISUL_SKILLS_REPOSITORY?: string;
 }
 
@@ -43,15 +51,15 @@ function rpcError(request: Request, id: Rpc["id"], code: number, message: string
 export async function serveMcp(request: Request, env: DirectEnv, trusted?: { canWrite: boolean }): Promise<Response> {
     const url = new URL(request.url);
     if (url.pathname.startsWith("/admin/")) return publisherFetch(request, env);
-    if (url.pathname === "/healthz") return jsonResponse(request, { ok: true, service: "gisul-worker", storage: "r2" });
+    if (url.pathname === "/healthz") return jsonResponse(request, { ok: true, service: "skillar-worker", storage: "r2" });
     if (url.pathname !== "/mcp") return jsonResponse(request, { error: "Not Found" }, 404);
     const origin = request.headers.get("origin");
-    const allowedOrigins = [url.origin, ...(env.GISUL_ALLOWED_ORIGINS ?? "").split(",").map(value => value.trim()).filter(Boolean)];
+    const allowedOrigins = [url.origin, ...((env.SKILLAR_ALLOWED_ORIGINS ?? env.GISUL_ALLOWED_ORIGINS) ?? "").split(",").map(value => value.trim()).filter(Boolean)];
     if (origin && !allowedOrigins.includes(origin)) return jsonResponse(request, { error: "Invalid origin" }, 403);
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders(request) });
-    if (!trusted && !env.GISUL_BEARER_TOKEN) return jsonResponse(request, { error: "MCP authentication is not configured" }, 503);
-    const canWrite = !!env.GISUL_GITHUB_TOKEN && (trusted ? trusted.canWrite : await validBearer(request, env.GISUL_WRITE_TOKEN ?? ""));
-    if (!trusted && !canWrite && !await validBearer(request, env.GISUL_BEARER_TOKEN)) return jsonResponse(request, { error: "Unauthorized" }, 401, { "www-authenticate": "Bearer" });
+    if (!trusted && !(env.SKILLAR_BEARER_TOKEN ?? env.GISUL_BEARER_TOKEN)) return jsonResponse(request, { error: "MCP authentication is not configured" }, 503);
+    const canWrite = !!(env.SKILLAR_GITHUB_TOKEN ?? env.GISUL_GITHUB_TOKEN) && (trusted ? trusted.canWrite : await validBearer(request, (env.SKILLAR_WRITE_TOKEN ?? env.GISUL_WRITE_TOKEN) ?? ""));
+    if (!trusted && !canWrite && !await validBearer(request, (env.SKILLAR_BEARER_TOKEN ?? env.GISUL_BEARER_TOKEN))) return jsonResponse(request, { error: "Unauthorized" }, 401, { "www-authenticate": "Bearer" });
     if (request.method !== "POST") return jsonResponse(request, { error: "Method Not Allowed" }, 405, { allow: "POST" });
     if (!/^application\/json(?:\s*;|$)/i.test(request.headers.get("content-type") ?? "")) return jsonResponse(request, { error: "Expected application/json" }, 415);
     const protocol = request.headers.get("mcp-protocol-version");
@@ -73,8 +81,8 @@ export async function serveMcp(request: Request, env: DirectEnv, trusted?: { can
       if (meta[VERSION_KEY] !== MODERN_VERSION) return rpcError(request, rpc.id, -32022, "Unsupported protocol version", 400, { supported: [MODERN_VERSION], requested: meta[VERSION_KEY] });
     } else if (protocol && !versions.includes(protocol)) return rpcError(request, rpc.id, -32600, "Unsupported MCP protocol version", 400);
     if (rpc.id === undefined) return jsonResponse(request, undefined, 202);
-    const serverInfo = { name: "gisul", version: env.GISUL_SERVER_VERSION ?? "0.2.0" };
-    const native = env.GISUL_NATIVE_TOOLS === "true";
+    const serverInfo = { name: "skillar", version: (env.SKILLAR_SERVER_VERSION ?? env.GISUL_SERVER_VERSION) ?? "0.2.0" };
+    const native = (env.SKILLAR_NATIVE_TOOLS ?? env.GISUL_NATIVE_TOOLS) === "true";
     const capabilities = { ...(canWrite || native ? { tools: { listChanged: false } } : {}), resources: { listChanged: false }, extensions: { "io.modelcontextprotocol/skills": { directoryRead: true } } };
     const respond = (result: Record<string, unknown>) => jsonResponse(request, { jsonrpc: "2.0", id: rpc.id, result: modern ? {
       ...result, resultType: "complete",
@@ -84,9 +92,9 @@ export async function serveMcp(request: Request, env: DirectEnv, trusted?: { can
     if (rpc.method === "server/discover") return respond({ supportedVersions: [MODERN_VERSION], capabilities });
     if (rpc.method === "initialize") return respond({
       protocolVersion: versions.includes(String(params.protocolVersion)) ? params.protocolVersion : versions[0],
-      serverInfo: { name: "gisul", version: env.GISUL_SERVER_VERSION ?? "0.2.0" },
+      serverInfo: { name: "skillar", version: (env.SKILLAR_SERVER_VERSION ?? env.GISUL_SERVER_VERSION) ?? "0.2.0" },
       capabilities,
-      instructions: "Remote workflow skills and native packs. When a pack is requested or a multi-skill workflow helps, discover with search_packs and combine selected URIs with load_pack; choose members before loading bodies. Discover skill metadata with skills/list, load a selected manifest with skills/get, then read supporting resources only when needed. Keep the returned commit in params._meta['io.gisul/commit'] for subsequent resource reads.",
+      instructions: "Remote workflow skills and native packs. When a pack is requested or a multi-skill workflow helps, discover with search_packs and combine selected URIs with load_pack; choose members before loading bodies. Discover skill metadata with skills/list, load a selected manifest with skills/get, then read supporting resources only when needed. Keep the returned commit in params._meta['app.skillar/commit'] for subsequent resource reads.",
     });
     if (rpc.method === "ping") return respond({});
     if (rpc.method === "tools/list") return respond({ tools: [...(native ? [...readTools, ...packReadTools] : []), ...(canWrite ? [...writeTools, ...packWriteTools] : [])] });
@@ -110,9 +118,10 @@ export async function serveMcp(request: Request, env: DirectEnv, trusted?: { can
     if (!["skills/list", "skills/get", "resources/list", "resources/read", "resources/directory/read"].includes(rpc.method)) return rpcError(request, rpc.id, -32601, "Method not found", modern ? 404 : 200);
     try {
       if (params._meta !== undefined && (!params._meta || typeof params._meta !== "object" || Array.isArray(params._meta))) throw new ReleaseError("Invalid request metadata", 400);
-      const pin = (params._meta as Record<string, unknown> | undefined)?.["io.gisul/commit"];
+      const meta = params._meta as Record<string, unknown> | undefined;
+      const pin = meta?.["app.skillar/commit"] ?? meta?.["io.gisul/commit"];
       const snapshot = await readSnapshot(env.SKILLS_BUCKET, pin);
-      const _meta = { release: snapshot.identity.release, commit: snapshot.identity.commit, server_version: env.GISUL_SERVER_VERSION ?? "0.2.0" };
+      const _meta = { release: snapshot.identity.release, commit: snapshot.identity.commit, server_version: (env.SKILLAR_SERVER_VERSION ?? env.GISUL_SERVER_VERSION) ?? "0.2.0" };
       if (rpc.method === "skills/list") {
         if (params.cursor !== undefined) throw new ReleaseError("This catalog is complete and has no cursor", 400);
         return respond({ resultType: "complete", skills: snapshot.inventory.skills, _meta });
